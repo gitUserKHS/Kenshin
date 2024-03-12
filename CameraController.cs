@@ -7,7 +7,6 @@ using static UnityEngine.GraphicsBuffer;
 
 public class CameraController : MonoBehaviour
 {
-    [SerializeField]
     Vector3 camDir;
 
     [SerializeField]
@@ -15,6 +14,13 @@ public class CameraController : MonoBehaviour
 
     PlayerController playerController;
 
+    public struct Directions
+    {
+        public Vector3 forward;
+        public Vector3 right;
+    }
+
+    public Directions directions;
     float mouseDeltaX;
     float mouseDeltaY;
 
@@ -28,10 +34,15 @@ public class CameraController : MonoBehaviour
     float playerDist = 3f;
     float yAngleLimit = 60 * Mathf.PI / 180;
 
+    private void Awake()
+    {
+        directions = new Directions() { forward = transform.forward, right = transform.right };
+        camDir = new Vector3(0f, 1.5f, -3.5f);
+    }
+
     void Start()
     {
-        playerController = player.GetComponent<PlayerController>();
-        camDir = new Vector3(0f, 1.5f, -3.5f);
+        //playerController = player.GetComponent<PlayerController>();
     }
 
     //void Update()
@@ -58,9 +69,8 @@ public class CameraController : MonoBehaviour
         transform.position = player.transform.position + camDir * playerDist;
 
         transform.LookAt(player.transform.position);
-        var f = transform.forward - new Vector3(0, transform.forward.y, 0);
-        var r = transform.right - new Vector3(0, transform.right.y, 0);
-        playerController.dirQueue.Enqueue(new PlayerController.Directions() { forward = f, right = r });
+        directions.forward = transform.forward - new Vector3(0, transform.forward.y, 0);
+        directions.right = transform.right - new Vector3(0, transform.right.y, 0);
         Zoom();
     }
 

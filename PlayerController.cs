@@ -4,30 +4,24 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
+    [SerializeField]
     float moveSpeed = 10.0f;
     Vector3 moveDir = Vector3.zero;
     Vector3 lookDir = Vector3.zero;
-    public Vector3 forward;
-    public Vector3 right;
-    
-    public struct Directions
-    {
-        public Vector3 forward;
-        public Vector3 right;
-    }
 
-    public Queue<Directions> dirQueue;
+    [SerializeField]
+    Camera camera;
+
+    CameraController cameraController;
 
     private void Awake()
     {
-        dirQueue = new Queue<Directions>();  
-        forward = transform.forward;
-        right = transform.right;
+
     }
 
     void Start()
     {
-      
+        cameraController = camera.GetComponent<CameraController>();
     }
 
     void Update()
@@ -36,30 +30,23 @@ public class PlayerController : MonoBehaviour
     }
     
     void ProcessMove()
-    {
-        if(dirQueue.Count > 0)
-        {
-            Directions dir = dirQueue.Dequeue();
-            forward = dir.forward; 
-            right = dir.right;
-        }
-
+    { 
         moveDir = Vector3.zero;
         if (Input.GetKey(KeyCode.W))
         {
-            moveDir += forward;
+            moveDir += cameraController.directions.forward;
         }
         if (Input.GetKey(KeyCode.S))
         {
-            moveDir += -forward;
+            moveDir += -cameraController.directions.forward;
         }
         if (Input.GetKey(KeyCode.A))
         {
-            moveDir += -right;
+            moveDir += -cameraController.directions.right;
         }
         if (Input.GetKey(KeyCode.D))
         {
-            moveDir += right;
+            moveDir += cameraController.directions.right;
         }
         moveDir = moveDir.normalized;
         transform.position += moveDir * moveSpeed * Time.deltaTime;
