@@ -7,20 +7,13 @@ using static UnityEngine.GraphicsBuffer;
 
 public class CameraController : MonoBehaviour
 {
+    [SerializeField]
     Vector3 camDir;
 
     [SerializeField]
     GameObject player;
 
-    PlayerController playerController;
-
-    public struct Directions
-    {
-        public Vector3 forward;
-        public Vector3 right;
-    }
-
-    public Directions directions;
+    Transform focus;
     float mouseDeltaX;
     float mouseDeltaY;
 
@@ -29,57 +22,52 @@ public class CameraController : MonoBehaviour
     [SerializeField]
     float scrollSpeed;
 
-    float maxPlayerDist = 5f;
-    float minPlayerDist = 2f;
-    float playerDist = 3f;
-    float yAngleLimit = 60 * Mathf.PI / 180;
+    float maxFocusDist = 5f;
+    float minFocusDist = 2f;
+    float focusDist = 3f;
+    float yAngleUpperLimit = 60 * Mathf.PI / 180;
+    float yAngleLowerLimit = 5 * Mathf.PI / 180;
 
     private void Awake()
     {
-        directions = new Directions() { forward = transform.forward, right = transform.right };
-        camDir = new Vector3(0f, 1.5f, -3.5f);
+        camDir = new Vector3(0f, 1.5f, 3.5f);
     }
 
     void Start()
     {
-        //playerController = player.GetComponent<PlayerController>();
+        focus = player.transform;
     }
-
-    //void Update()
-    //{
-
-    //}
 
     private void LateUpdate()
     {
-        if (player == null)
-            return;
-
         mouseDeltaX = Input.GetAxis("Mouse X");
         mouseDeltaY = Input.GetAxis("Mouse Y");
-        
-        float cameraUpperLimitY = player.transform.position.y + playerDist * Mathf.Sin(yAngleLimit);
-        float cameraLowerLimitY = player.transform.position.y - playerDist * Mathf.Sin(yAngleLimit);
+
+        mouseDeltaX = Mathf.Clamp(mouseDeltaX, -3, 3);
+        if (Mathf.Abs(mouseDeltaX) < 0.1f)
+            mouseDeltaX = 0;
+        Vector3 focusPos = focus.position + Vector3.up * 1f;
+
+        float cameraUpperLimitY = focusPos.y + focusDist * Mathf.Sin(yAngleUpperLimit);
+        float cameraLowerLimitY = focusPos.y + focusDist * Mathf.Sin(yAngleLowerLimit);
 
         Vector3 deltaCameraMove = transform.right * -mouseDeltaX;
         if(false == (transform.position.y > cameraUpperLimitY && mouseDeltaY < 0 || transform.position.y < cameraLowerLimitY && mouseDeltaY > 0))
             deltaCameraMove += transform.up * -mouseDeltaY;
         camDir = (camDir + deltaCameraMove * sensitivity * Time.deltaTime).normalized;
 
-        transform.position = player.transform.position + camDir * playerDist;
-
-        transform.LookAt(player.transform.position);
-        directions.forward = transform.forward - new Vector3(0, transform.forward.y, 0);
-        directions.right = transform.right - new Vector3(0, transform.right.y, 0);
+        transform.position = focusPos + camDir * focusDist;
+        transform.LookAt(focusPos);
+        
         Zoom();
     }
 
     void Zoom()
     {
         float scroll = Input.GetAxis("Mouse ScrollWheel") * scrollSpeed;
-        if (Mathf.Abs(scroll) < 0.01f)
-            return;
+        //if (Mathf.Abs(scroll) < 0.01f)
+        //    return;
 
-        playerDist = Mathf.Clamp(playerDist - scroll, minPlayerDist, maxPlayerDist);
+        focusDist = Mathf.Clamp(focusDist - scroll, minFocusDist, maxFocusDist);
     }
 }

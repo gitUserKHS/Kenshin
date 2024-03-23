@@ -1,61 +1,87 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UIElements;
 
 public class PlayerController : MonoBehaviour
 {
     [SerializeField]
-    float moveSpeed = 10.0f;
-    Vector3 moveDir = Vector3.zero;
-    Vector3 lookDir = Vector3.zero;
-
+    float playerMoveSpeed = 5.0f;
+    Vector3 playerMoveDir = Vector3.zero;
+    Vector3 playerVelocity = Vector3.zero;
     [SerializeField]
-    Camera camera;
+    float jumpHeight = 3f;
+    float gravity = -9.8f;
+    bool playerSlerping = false;
 
-    CameraController cameraController;
+    CharacterController controller;
 
     private void Awake()
     {
-
+        controller = GetComponent<CharacterController>();
     }
 
     void Start()
     {
-        cameraController = camera.GetComponent<CameraController>();
     }
 
     void Update()
     {
-        ProcessMove();
+        Debug.Log(IsGrounded());
+        controller.Move(playerMoveDir * playerMoveSpeed * Time.deltaTime);
+
+        Debug.Log(playerVelocity);
+        playerVelocity.y += gravity * Time.deltaTime;
+        if (IsGrounded() && playerVelocity.y < 0)
+        {
+            playerVelocity.y = -2f;
+        }
+        controller.Move(playerVelocity * Time.deltaTime);
     }
-    
+
+    private void LateUpdate()
+    {
+        ProcessMove();
+
+        if (Input.GetKey(KeyCode.Space))
+        {
+            Jump();
+        }
+    }
+
     void ProcessMove()
-    { 
-        moveDir = Vector3.zero;
-        if (Input.GetKey(KeyCode.W))
+    {
+        float moveX = Input.GetAxisRaw("Horizontal");
+        float moveZ = Input.GetAxisRaw("Vertical");
+        playerMoveDir = Camera.main.transform.rotation * new Vector3(moveX, 0, moveZ);
+        playerMoveDir.y = 0;
+
+        playerMoveDir = playerMoveDir.normalized;
+        if (playerMoveDir != Vector3.zero)
         {
-            moveDir += cameraController.directions.forward;
+            if (Mathf.Abs(Quaternion.Angle(transform.rotation, Quaternion.LookRotation(playerMoveDir))) > 20 || playerSlerping)
+            {
+                playerSlerping = true;
+                transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(playerMoveDir), 30 * Time.deltaTime);
+                if (Mathf.Abs(Quaternion.Angle(transform.rotation, Quaternion.LookRotation(playerMoveDir))) < 1f)
+                    playerSlerping = false;
+            }
+            else
+                transform.rotation = Quaternion.LookRotation(playerMoveDir);
         }
-        if (Input.GetKey(KeyCode.S))
+    }
+
+    void Jump()
+    {
+        //Debug.Log(isGrounded);
+        if(IsGrounded())
         {
-            moveDir += -cameraController.directions.forward;
+            playerVelocity.y = Mathf.Sqrt(jumpHeight * -3.0f * gravity);
         }
-        if (Input.GetKey(KeyCode.A))
-        {
-            moveDir += -cameraController.directions.right;
-        }
-        if (Input.GetKey(KeyCode.D))
-        {
-            moveDir += cameraController.directions.right;
-        }
-        moveDir = moveDir.normalized;
-        transform.position += moveDir * moveSpeed * Time.deltaTime;
-        if (moveDir != Vector3.zero)
-        {
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(moveDir), 40 * Time.deltaTime);
-            //transform.rotation = Quaternion.LookRotation(moveDir);
-        }
+    }
+
+    bool IsGrounded()
+    {
+        return Physics.BoxCast(transform.position + Vector3.up, new Vector3(1, 0.1f, 1), -transform.up, transform.rotation, 1.01f);
     }
 }
-
-
