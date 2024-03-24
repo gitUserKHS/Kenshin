@@ -1,2 +1,0 @@
-# Kenshin
-# nodejs_simpleForum

@@ -10,7 +10,7 @@ public class Define
         Player,
         Monster
     }
-    public enum State
+    public enum CreatureState
     {
         Die,
         Moving,
