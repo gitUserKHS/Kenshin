@@ -12,16 +12,46 @@ public class PlayerController : CreatureController
     float playerMoveSpeed = 7.0f;
     float gravity = -9.8f;
     float jumpHeight = 1.5f;
+    float attackSpeed = 1f;
 
     bool playerSlerping = false;
     bool isAttacking = false;
 
     CharacterController controller;
 
+    [SerializeField]
+    Transform sword;
+
+    Coroutine coSkill = null;
+
+    public override CreatureState State
+    {
+        get { return state; }
+        set
+        {
+            if (state == value)
+                return;
+            
+            if(value == CreatureState.Skill)
+            {
+                sword.gameObject.SetActive(true);
+            }
+            else
+            {
+                sword.gameObject.SetActive(false);
+            }
+            state = value;
+            UpdateAnimation();
+        }
+    }
+
     protected override void Init_Awake()
     {
         base.Init_Awake();
         controller = GetComponent<CharacterController>();
+        sword.gameObject.SetActive(false);
+
+        animator.SetFloat("AttackSpeed", attackSpeed);
     }
 
     protected override void UpdateController()
@@ -33,17 +63,10 @@ public class PlayerController : CreatureController
         }
         controller.Move(playerVelocity * Time.deltaTime);
 
-        if(Input.GetMouseButtonDown(0) && IsGrounded())
+        if(coSkill == null && Input.GetMouseButton(0) && IsGrounded())
         {
-            isAttacking = true;
-            endAttacking = false;
-            State = CreatureState.Skill;
+            coSkill = StartCoroutine("CoStartSwordAttack");
         }
-
-        //if(Input.GetMouseButtonUp(0))
-        //{
-        //    isAttacking = false;
-        //}
 
         base.UpdateController();
     }
@@ -56,19 +79,10 @@ public class PlayerController : CreatureController
         controller.Move(playerMoveDir * moveSpeed * Time.deltaTime);
     }
 
-    bool endAttacking = false;
-    protected override void UpdateSkill()
-    {
-        if (Input.GetMouseButtonUp(0))
-            endAttacking = true;
-
-        if (endAttacking && !isAttacking)
-            State = CreatureState.Idle;
-    }
 
     private void LateUpdate()
     {
-        if(isAttacking == false)
+        if(coSkill == null)
             ProcessMove();
 
         //if (Input.GetKey(KeyCode.Space))
@@ -119,16 +133,17 @@ public class PlayerController : CreatureController
         return Physics.BoxCast(transform.position + Vector3.up, new Vector3(1, 0.1f, 1), -transform.up, transform.rotation, 1.01f);
     }
 
-    protected void SetAttackEnd()
-    {
-        isAttacking = false;
-    }
-
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
         if (1 << hit.collider.gameObject.layer == LayerMask.GetMask("Ground"))
             return;
+    }
 
-
+    IEnumerator CoStartSwordAttack()
+    {
+        State = CreatureState.Skill;
+        yield return new WaitForSeconds(attackSpeed);
+        State = CreatureState.Idle;
+        coSkill = null;
     }
 }

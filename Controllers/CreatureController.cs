@@ -7,7 +7,7 @@ public class CreatureController : MonoBehaviour
 {
 
     protected CreatureState state = CreatureState.Idle;
-    public CreatureState State
+    public virtual CreatureState State
     {
         get { return state; }
         set
