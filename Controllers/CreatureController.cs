@@ -32,6 +32,7 @@ public class CreatureController : MonoBehaviour
                 animator.CrossFade("RUN", 0.1f);
                 break;
             case CreatureState.Skill:
+                animator.CrossFade("ATTACK", 0.1f);
                 break;
             case CreatureState.Die:
                 break;
@@ -81,4 +82,9 @@ public class CreatureController : MonoBehaviour
     protected virtual void UpdateMoving() { }
     protected virtual void UpdateSkill() { }
     protected virtual void UpdateDie() { }
+
+    protected virtual bool IsGrounded()
+    {
+        return true;
+    }
 }

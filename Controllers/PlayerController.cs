@@ -6,12 +6,15 @@ using static Define;
 
 public class PlayerController : CreatureController
 {
-    float playerMoveSpeed = 7.0f;
     Vector3 playerMoveDir = Vector3.zero;
-    Vector3 playerVelocity = Vector3.zero;
+    Vector3 playerVelocity = Vector3.zero;   
+
+    float playerMoveSpeed = 7.0f;
     float gravity = -9.8f;
     float jumpHeight = 1.5f;
+
     bool playerSlerping = false;
+    bool isAttacking = false;
 
     CharacterController controller;
 
@@ -30,6 +33,18 @@ public class PlayerController : CreatureController
         }
         controller.Move(playerVelocity * Time.deltaTime);
 
+        if(Input.GetMouseButtonDown(0) && IsGrounded())
+        {
+            isAttacking = true;
+            endAttacking = false;
+            State = CreatureState.Skill;
+        }
+
+        //if(Input.GetMouseButtonUp(0))
+        //{
+        //    isAttacking = false;
+        //}
+
         base.UpdateController();
     }
 
@@ -41,9 +56,20 @@ public class PlayerController : CreatureController
         controller.Move(playerMoveDir * moveSpeed * Time.deltaTime);
     }
 
+    bool endAttacking = false;
+    protected override void UpdateSkill()
+    {
+        if (Input.GetMouseButtonUp(0))
+            endAttacking = true;
+
+        if (endAttacking && !isAttacking)
+            State = CreatureState.Idle;
+    }
+
     private void LateUpdate()
     {
-        ProcessMove();
+        if(isAttacking == false)
+            ProcessMove();
 
         //if (Input.GetKey(KeyCode.Space))
         //{
@@ -74,21 +100,35 @@ public class PlayerController : CreatureController
         }
         else
         {
+            if(State == CreatureState.Skill)
+                return;
             State = CreatureState.Idle;
         }
     }
 
     void Jump()
     {
-        //Debug.Log(isGrounded);
         if(IsGrounded())
         {
             playerVelocity.y = Mathf.Sqrt(jumpHeight * -3.0f * gravity);
         }
     }
 
-    bool IsGrounded()
+    protected override bool IsGrounded()
     {
         return Physics.BoxCast(transform.position + Vector3.up, new Vector3(1, 0.1f, 1), -transform.up, transform.rotation, 1.01f);
+    }
+
+    protected void SetAttackEnd()
+    {
+        isAttacking = false;
+    }
+
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        if (1 << hit.collider.gameObject.layer == LayerMask.GetMask("Ground"))
+            return;
+
+
     }
 }
