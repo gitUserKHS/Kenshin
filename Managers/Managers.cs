@@ -13,9 +13,8 @@ public class Managers : MonoBehaviour
 #endregion
 
 
-    #region Core
+#region Core
     DataManager data = new DataManager();
-    InputManager input = new InputManager();
     ResourceManager resource = new ResourceManager();
     PoolManager pool = new PoolManager();
     SceneManagerEx scene = new SceneManagerEx();
@@ -23,7 +22,6 @@ public class Managers : MonoBehaviour
     UIManager ui = new UIManager();
 
     public static DataManager Data { get { return Instance.data; } }
-    public static InputManager Input { get { return Instance.input; } }
     public static ResourceManager Resource { get { return Instance.resource; } }
     public static PoolManager Pool { get { return Instance.pool; } }
     public static SceneManagerEx Scene { get { return Instance.scene; } }
@@ -42,7 +40,7 @@ public class Managers : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        input.OnUpdate();
+
     }
 
     static void Init()
@@ -68,7 +66,6 @@ public class Managers : MonoBehaviour
     public static void Clear()
     {
         Sound.Clear();
-        Input.Clear();
         Scene.Clear();
         UI.Clear();
 

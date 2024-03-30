@@ -21,7 +21,7 @@ public class CreatureController : MonoBehaviour
 
     protected Animator animator;
 
-    protected void UpdateAnimation()
+    protected virtual void UpdateAnimation()
     {
         switch (State)
         {

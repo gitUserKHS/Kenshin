@@ -44,8 +44,6 @@ public class CameraController : MonoBehaviour
         mouseDeltaY = Input.GetAxis("Mouse Y");
 
         mouseDeltaX = Mathf.Clamp(mouseDeltaX, -3, 3);
-        if (Mathf.Abs(mouseDeltaX) < 0.1f)
-            mouseDeltaX = 0;
         Vector3 focusPos = focus.position + Vector3.up * 1f;
 
         float cameraUpperLimitY = focusPos.y + focusDist * Mathf.Sin(yAngleUpperLimit);

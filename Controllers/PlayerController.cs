@@ -7,20 +7,21 @@ using static Define;
 public class PlayerController : CreatureController
 {
     Vector3 playerMoveDir = Vector3.zero;
-    Vector3 playerVelocity = Vector3.zero;   
+    Vector3 playerVelocity = Vector3.zero;
 
+    [SerializeField]
     float playerMoveSpeed = 7.0f;
-    float gravity = -9.8f;
-    float jumpHeight = 1.5f;
+    float gravity = -20f;
+    float jumpHeight = 1f;
     float attackSpeed = 1f;
 
     bool playerSlerping = false;
-    bool isAttacking = false;
+    bool isJumping = false;
 
     CharacterController controller;
 
     [SerializeField]
-    Transform sword;
+    Transform weapon;
 
     Coroutine coSkill = null;
 
@@ -31,17 +32,29 @@ public class PlayerController : CreatureController
         {
             if (state == value)
                 return;
-            
-            if(value == CreatureState.Skill)
+
+            if (value == CreatureState.Skill)
             {
-                sword.gameObject.SetActive(true);
+                weapon.gameObject.SetActive(true);
             }
             else
             {
-                sword.gameObject.SetActive(false);
+                weapon.gameObject.SetActive(false);
             }
             state = value;
             UpdateAnimation();
+        }
+    }
+
+    protected override void UpdateAnimation()
+    {
+        base.UpdateAnimation();
+
+        switch (State)
+        {
+            case CreatureState.Jumping:
+                animator.CrossFade("JUMP", 0.1f);
+                break;
         }
     }
 
@@ -49,7 +62,7 @@ public class PlayerController : CreatureController
     {
         base.Init_Awake();
         controller = GetComponent<CharacterController>();
-        sword.gameObject.SetActive(false);
+        weapon.gameObject.SetActive(false);
 
         animator.SetFloat("AttackSpeed", attackSpeed);
     }
@@ -59,40 +72,52 @@ public class PlayerController : CreatureController
         playerVelocity.y += gravity * Time.deltaTime;
         if (IsGrounded() && playerVelocity.y < 0)
         {
+            if (State == CreatureState.Jumping)
+            {
+                isJumping = false;
+                State = CreatureState.Idle;
+            }
             playerVelocity.y = -2f;
         }
         controller.Move(playerVelocity * Time.deltaTime);
 
-        if(coSkill == null && Input.GetMouseButton(0) && IsGrounded())
+        if (coSkill == null && Input.GetMouseButton(0) && IsGrounded())
         {
-            coSkill = StartCoroutine("CoStartSwordAttack");
+            coSkill = StartCoroutine(CoStartSwordAttack());
         }
 
         base.UpdateController();
+
+        switch (State)
+        {
+            case CreatureState.Jumping:
+                UpdateMoving();
+                break;
+        }
     }
 
     protected override void UpdateMoving()
     {
         float moveSpeed = playerMoveSpeed;
-        if (IsGrounded() == false)
-            moveSpeed = 0.01f;
         controller.Move(playerMoveDir * moveSpeed * Time.deltaTime);
     }
 
 
     private void LateUpdate()
     {
-        if(coSkill == null)
-            ProcessMove();
+        ProcessMove();
 
-        //if (Input.GetKey(KeyCode.Space))
-        //{
-        //    Jump();
-        //}
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            Jump();
+        }
     }
 
     void ProcessMove()
     {
+        if (coSkill != null)
+            return;
+
         float moveX = Input.GetAxisRaw("Horizontal");
         float moveZ = Input.GetAxisRaw("Vertical");
         playerMoveDir = Camera.main.transform.rotation * new Vector3(moveX, 0, moveZ);
@@ -101,7 +126,10 @@ public class PlayerController : CreatureController
         playerMoveDir = playerMoveDir.normalized;
         if (playerMoveDir != Vector3.zero)
         {
-            State = CreatureState.Moving;
+            if (isJumping)
+                State = CreatureState.Jumping;
+            else
+                State = CreatureState.Moving;
             if (Mathf.Abs(Quaternion.Angle(transform.rotation, Quaternion.LookRotation(playerMoveDir))) > 20 || playerSlerping)
             {
                 playerSlerping = true;
@@ -114,23 +142,37 @@ public class PlayerController : CreatureController
         }
         else
         {
-            if(State == CreatureState.Skill)
-                return;
+            switch (State)
+            {
+                case CreatureState.Skill:
+                case CreatureState.Jumping:
+                    return;
+            }
             State = CreatureState.Idle;
         }
     }
 
     void Jump()
     {
-        if(IsGrounded())
+        if (IsGrounded())
         {
             playerVelocity.y = Mathf.Sqrt(jumpHeight * -3.0f * gravity);
+            State = CreatureState.Jumping;
+            isJumping = true;
         }
     }
 
     protected override bool IsGrounded()
     {
-        return Physics.BoxCast(transform.position + Vector3.up, new Vector3(1, 0.1f, 1), -transform.up, transform.rotation, 1.01f);
+        LayerMask layer = LayerMask.GetMask("Ground") | LayerMask.GetMask("Wall");
+        Collider[] colliders = Physics.OverlapBox(transform.position, new Vector3(0.1f, 0.1f, 0.1f), Quaternion.identity, layer);
+        Debug.Log(colliders.Length);
+        return colliders.Length != 0;
+    }
+
+    private void OnDrawGizmos()
+    {
+        Gizmos.DrawWireCube(transform.position, transform.lossyScale);
     }
 
     private void OnControllerColliderHit(ControllerColliderHit hit)
