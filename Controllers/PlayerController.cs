@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Resources;
 using UnityEngine;
 using UnityEngine.UIElements;
 using static Define;
@@ -14,9 +15,10 @@ public class PlayerController : CreatureController
     float gravity = -20f;
     float jumpHeight = 1f;
     float attackSpeed = 1f;
+    float jumpAnimSpeed = 1.5f;
 
     bool playerSlerping = false;
-    bool isJumping = false;
+    bool isMoving = false;
 
     CharacterController controller;
 
@@ -24,6 +26,9 @@ public class PlayerController : CreatureController
     Transform weapon;
 
     Coroutine coSkill = null;
+    Coroutine coJump = null;
+    Coroutine coFall = null;
+    Coroutine coLand = null;
 
     public override CreatureState State
     {
@@ -41,6 +46,7 @@ public class PlayerController : CreatureController
             {
                 weapon.gameObject.SetActive(false);
             }
+
             state = value;
             UpdateAnimation();
         }
@@ -53,7 +59,16 @@ public class PlayerController : CreatureController
         switch (State)
         {
             case CreatureState.Jumping:
-                animator.CrossFade("JUMP", 0.1f);
+                if (isMoving == false)
+                    animator.CrossFade("JUMP_STOP", 0.1f);
+                else
+                    animator.CrossFade("JUMP_MOVE", 0.3f);
+                break;
+            case CreatureState.Falling:
+                animator.CrossFade("FALL", 0.1f);
+                break;
+            case CreatureState.Landing:
+                animator.CrossFade("LAND", 0.1f);
                 break;
         }
     }
@@ -65,6 +80,7 @@ public class PlayerController : CreatureController
         weapon.gameObject.SetActive(false);
 
         animator.SetFloat("AttackSpeed", attackSpeed);
+        animator.SetFloat("JumpAnimSpeed", jumpAnimSpeed);
     }
 
     protected override void UpdateController()
@@ -72,25 +88,27 @@ public class PlayerController : CreatureController
         playerVelocity.y += gravity * Time.deltaTime;
         if (IsGrounded() && playerVelocity.y < 0)
         {
-            if (State == CreatureState.Jumping)
-            {
-                isJumping = false;
-                State = CreatureState.Idle;
-            }
-            playerVelocity.y = -2f;
+            playerVelocity.y = -5f;
+        }
+        else if (State != CreatureState.Jumping && State != CreatureState.Falling)
+        {
+            coFall = StartCoroutine(CoFall());
         }
         controller.Move(playerVelocity * Time.deltaTime);
 
-        if (coSkill == null && Input.GetMouseButton(0) && IsGrounded())
-        {
-            coSkill = StartCoroutine(CoStartSwordAttack());
-        }
+        ProcessMouseInput();
 
         base.UpdateController();
 
         switch (State)
         {
             case CreatureState.Jumping:
+                UpdateJumping();
+                break;
+            case CreatureState.Falling:
+                UpdateFalling();
+                break;
+            case CreatureState.Landing:
                 UpdateMoving();
                 break;
         }
@@ -102,6 +120,19 @@ public class PlayerController : CreatureController
         controller.Move(playerMoveDir * moveSpeed * Time.deltaTime);
     }
 
+    protected void UpdateJumping()
+    {
+        controller.Move(playerMoveDir * playerMoveSpeed * Time.deltaTime);
+    }
+
+    protected void UpdateFalling()
+    {
+        if (IsGrounded())
+        {
+            coLand = StartCoroutine(CoLand());
+        }
+        controller.Move(playerMoveDir * playerMoveSpeed * Time.deltaTime);
+    }
 
     private void LateUpdate()
     {
@@ -110,6 +141,14 @@ public class PlayerController : CreatureController
         if (Input.GetKeyDown(KeyCode.Space))
         {
             Jump();
+        }
+    }
+
+    void ProcessMouseInput()
+    {
+        if (coSkill == null && Input.GetMouseButton(0) && IsGrounded())
+        {
+            coSkill = StartCoroutine(CoStartSwordAttack());
         }
     }
 
@@ -126,9 +165,8 @@ public class PlayerController : CreatureController
         playerMoveDir = playerMoveDir.normalized;
         if (playerMoveDir != Vector3.zero)
         {
-            if (isJumping)
-                State = CreatureState.Jumping;
-            else
+            isMoving = true;
+            if (State == CreatureState.Idle || State == CreatureState.Landing)
                 State = CreatureState.Moving;
             if (Mathf.Abs(Quaternion.Angle(transform.rotation, Quaternion.LookRotation(playerMoveDir))) > 20 || playerSlerping)
             {
@@ -142,13 +180,9 @@ public class PlayerController : CreatureController
         }
         else
         {
-            switch (State)
-            {
-                case CreatureState.Skill:
-                case CreatureState.Jumping:
-                    return;
-            }
-            State = CreatureState.Idle;
+            isMoving = false;
+            if(State == CreatureState.Moving)
+                State = CreatureState.Idle;
         }
     }
 
@@ -157,22 +191,15 @@ public class PlayerController : CreatureController
         if (IsGrounded())
         {
             playerVelocity.y = Mathf.Sqrt(jumpHeight * -3.0f * gravity);
-            State = CreatureState.Jumping;
-            isJumping = true;
+            coJump = StartCoroutine(CoJumpCooldown());
         }
     }
 
     protected override bool IsGrounded()
     {
         LayerMask layer = LayerMask.GetMask("Ground") | LayerMask.GetMask("Wall");
-        Collider[] colliders = Physics.OverlapBox(transform.position, new Vector3(0.1f, 0.1f, 0.1f), Quaternion.identity, layer);
-        Debug.Log(colliders.Length);
+        Collider[] colliders = Physics.OverlapBox(transform.position, new Vector3(0.3f, 0.5f, 0.3f), Quaternion.identity, layer);
         return colliders.Length != 0;
-    }
-
-    private void OnDrawGizmos()
-    {
-        Gizmos.DrawWireCube(transform.position, transform.lossyScale);
     }
 
     private void OnControllerColliderHit(ControllerColliderHit hit)
@@ -187,5 +214,38 @@ public class PlayerController : CreatureController
         yield return new WaitForSeconds(attackSpeed);
         State = CreatureState.Idle;
         coSkill = null;
+    }
+
+    IEnumerator CoJumpCooldown()
+    {
+        State = CreatureState.Jumping;
+        yield return new WaitForSeconds(1 / jumpAnimSpeed);
+        if (IsGrounded())
+        {
+            //isJumping = false;
+            State = CreatureState.Idle;
+        }
+        else 
+        {
+            State = CreatureState.Falling;
+        }
+        coJump = null;
+    }
+
+    IEnumerator CoFall()
+    {
+        yield return new WaitForSeconds(0.2f);
+        if(IsGrounded() == false)
+            State = CreatureState.Falling;
+        coFall = null;
+    }
+
+    IEnumerator CoLand()
+    {
+        State = CreatureState.Landing;
+        yield return new WaitForSeconds(1f);
+        if(State == CreatureState.Landing)
+            State = CreatureState.Idle;
+        coLand = null;
     }
 }

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using static Define;
 
-public class CreatureController : MonoBehaviour
+public class CreatureController : BaseController
 {
 
     protected CreatureState state = CreatureState.Idle;
@@ -39,27 +39,14 @@ public class CreatureController : MonoBehaviour
         }
     }
 
-    void Awake()
-    {
-        Init_Awake();
-    }
 
-    protected virtual void Init_Awake()
+    protected override void Init_Awake()
     {
+        base.Init_Awake();
         animator = GetComponent<Animator>();
     }
 
-    private void Start()
-    {
-
-    }
-
-    void Update()
-    {
-        UpdateController();
-    }
-
-    protected virtual void UpdateController()
+    protected override void UpdateController()
     {
         switch (State)
         {
