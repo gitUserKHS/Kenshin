@@ -15,4 +15,26 @@ public static class Extension
     {
         return go != null && go.activeSelf;
     }
+
+    public static Transform RecursiveFindChild(this Transform parent, string childName)
+    {
+        Transform child = null;
+        for (int i = 0; i < parent.childCount; i++)
+        {
+            child = parent.GetChild(i);
+            if (child.name == childName)
+            {
+                break;
+            }
+            else
+            {
+                child = RecursiveFindChild(child, childName);
+                if (child != null)
+                {
+                    break;
+                }
+            }
+        }
+        return child;
+    }
 }

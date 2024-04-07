@@ -10,6 +10,7 @@ public class Define
         Player,
         Monster
     }
+
     public enum CreatureState
     {
         Die,
@@ -18,7 +19,8 @@ public class Define
         Skill,
         Jumping,
         Falling,
-        Landing
+        Landing,
+        Dashing
     }
 
 public enum Layer
