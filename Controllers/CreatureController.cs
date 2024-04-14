@@ -5,8 +5,8 @@ using static Define;
 
 public class CreatureController : BaseController
 {
-
     protected CreatureState state = CreatureState.Idle;
+
     public virtual CreatureState State
     {
         get { return state; }
@@ -73,5 +73,15 @@ public class CreatureController : BaseController
     protected virtual bool IsGrounded()
     {
         return true;
+    }
+
+    public virtual void OnDamaged(GameObject attacker, int damage)
+    {
+
+    }
+
+    public virtual void OnDead()
+    {
+
     }
 }

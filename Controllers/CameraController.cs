@@ -12,6 +12,7 @@ public class CameraController : MonoBehaviour
 
     [SerializeField]
     GameObject player;
+    PlayerController playerController;
 
     Transform focus;
     float mouseDeltaX;
@@ -31,6 +32,7 @@ public class CameraController : MonoBehaviour
     private void Awake()
     {
         camDir = new Vector3(0f, 1.5f, 3.5f);
+        playerController = player.GetComponent<PlayerController>();
     }
 
     void Start()
@@ -58,6 +60,8 @@ public class CameraController : MonoBehaviour
         transform.LookAt(focusPos);
         
         Zoom();
+
+        playerController.HandleCharacterInput();
     }
 
     void Zoom()

@@ -8,12 +8,14 @@ public class Managers : MonoBehaviour
     static Managers s_instance;
     static Managers Instance { get { Init(); return s_instance; } }
 
-#region Contents
+    #region Contents
+    GameManagerEx game = new GameManagerEx();
 
-#endregion
+    public static GameManagerEx Game { get { return Instance.game; } }
+    #endregion
 
 
-#region Core
+    #region Core
     DataManager data = new DataManager();
     ResourceManager resource = new ResourceManager();
     PoolManager pool = new PoolManager();
@@ -28,7 +30,7 @@ public class Managers : MonoBehaviour
     public static SoundManager Sound { get { return Instance.sound; } }
     public static UIManager UI { get { return Instance.ui;  } }
 
-#endregion
+    #endregion
 
 
     // Start is called before the first frame update

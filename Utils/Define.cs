@@ -23,11 +23,11 @@ public class Define
         Dashing
     }
 
-public enum Layer
+    public enum Layer
     {
-        Monster = 6,
-        Ground = 7,
-        Block = 8
+        Block = 3,
+        Ground = 6,
+        Monster = 7
     }
 
     public enum Scene

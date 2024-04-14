@@ -1,10 +1,13 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Resources;
+using System.Threading;
 using Unity.VisualScripting;
 using UnityEditor.Timeline.Actions;
 using UnityEngine;
+using UnityEngine.UI;
 using UnityEngine.UIElements;
 using static Define;
 
@@ -29,6 +32,7 @@ public class PlayerController : CreatureController
 
     [SerializeField]
     Transform weapon;
+    Transform targetToAttack;
 
     Coroutine coSkill = null;
     Coroutine coJump = null;
@@ -66,10 +70,19 @@ public class PlayerController : CreatureController
 
     protected override void UpdateAnimation()
     {
-        base.UpdateAnimation();
-
         switch (State)
         {
+            case CreatureState.Idle:
+                animator.CrossFade("WAIT", 0.1f);
+                break;
+            case CreatureState.Moving:
+                animator.CrossFade("RUN", 0.1f);
+                break;
+            case CreatureState.Skill:
+                animator.CrossFade("SWORD_ATTACK", 0.1f);
+                break;
+            case CreatureState.Die:
+                break;
             case CreatureState.Jumping:
                 if (isMoving == false)
                     animator.CrossFade("JUMP_STOP", 0.1f);
@@ -83,7 +96,7 @@ public class PlayerController : CreatureController
                 animator.CrossFade("LAND", 0.1f);
                 break;
             case CreatureState.Dashing:
-                animator.CrossFade("DASH", 0.1f);
+                animator.CrossFade("DASH", 0.01f);
                 break;
         }
     }
@@ -91,6 +104,7 @@ public class PlayerController : CreatureController
     protected override void Init_Awake()
     {
         base.Init_Awake();
+        WorldObjectType = WorldObject.Player;
         controller = GetComponent<CharacterController>();
         weapon.gameObject.SetActive(false);
 
@@ -102,7 +116,6 @@ public class PlayerController : CreatureController
     {
         base.UpdateController();
 
-        dashSpeed = Mathf.Max(0, dashSpeed - 0.05f);
         playerVelocity.y += gravity * Time.deltaTime;
         if (IsGrounded() && playerVelocity.y < 0)
         {
@@ -146,7 +159,7 @@ public class PlayerController : CreatureController
     protected void UpdateDashing()
     {
         controller.Move(transform.forward * dashSpeed * Time.deltaTime);
-        dashSpeed = Mathf.Max(dashSpeed - 0.005f * dashSpeed, playerMoveSpeed);
+        dashSpeed = Mathf.Max(dashSpeed - 0.02f * dashSpeed, playerMoveSpeed);
     }
 
     protected void UpdateJumping()
@@ -163,12 +176,11 @@ public class PlayerController : CreatureController
         UpdateMoving();
     }
 
-    private void LateUpdate()
+    public void HandleCharacterInput()
     {
-        ProcessMouseInput();
         ProcessMove();
-        if(State != CreatureState.Skill)
-            ProcessRotation(playerMoveDir);
+        ProcessRotation();
+        ProcessMouseInput();
 
         if (Input.GetKeyDown(KeyCode.Space))
         {
@@ -180,7 +192,9 @@ public class PlayerController : CreatureController
     {
         if (coSkill == null && Input.GetMouseButton(0) && IsGrounded())
         {
-            //transform.rotation = Quaternion.LookRotation(GetXZinputDir());
+            Vector3 dir = GetXZinputDir();
+            if(dir != Vector3.zero)
+                transform.rotation = Quaternion.LookRotation(dir);
             coSkill = StartCoroutine(CoSwordAttack());
         }
        
@@ -191,12 +205,15 @@ public class PlayerController : CreatureController
         }
     }
 
-    void ProcessRotation(Vector3 lookDirection)
+    void ProcessRotation()
     {
-        if (lookDirection == Vector3.zero)
+        if (State == CreatureState.Skill)
             return;
 
-        Vector3 lookDir = lookDirection;
+        Vector3 lookDir = playerMoveDir;
+        if (lookDir == Vector3.zero)
+            return;
+       
         if (Mathf.Abs(Quaternion.Angle(transform.rotation, Quaternion.LookRotation(lookDir))) > 20 || playerSlerping)
         {
             playerSlerping = true;
@@ -252,9 +269,19 @@ public class PlayerController : CreatureController
     Transform FindSwordAttackTarget()
     {
         Collider[] monsters = Physics.OverlapSphere(transform.position + Vector3.up, swordAttackRange, LayerMask.GetMask("Monster"));
-        if (monsters.Length > 0)
+        LayerMask mask = 1 << (int)Layer.Block;
+        
+        foreach(Collider monster in monsters)
         {
-            return monsters[0].transform;
+            Vector3 delta = monster.transform.position - transform.position;
+
+            if (delta.y > swordAttackRange * Mathf.Sin(Mathf.Deg2Rad * 45))
+                continue;
+
+            if(Physics.Raycast(transform.position + Vector3.up, delta, delta.magnitude, mask) == false)
+            {
+                return monster.transform;
+            }
         }
         return null;
     }
@@ -266,23 +293,44 @@ public class PlayerController : CreatureController
 
     protected override bool IsGrounded()
     {
-        LayerMask layer = LayerMask.GetMask("Ground") | LayerMask.GetMask("Wall");
-        Collider[] colliders = Physics.OverlapBox(transform.position, new Vector3(0.1f, 0.5f, 0.1f), Quaternion.identity, layer);
+        LayerMask mask = 1 << (int)Layer.Ground | 1 << (int)Layer.Block;
+        Collider[] colliders = Physics.OverlapBox(transform.position, new Vector3(0.1f, 0.5f, 0.1f), Quaternion.identity, mask);
         return colliders.Length != 0;
     }
 
     private void OnControllerColliderHit(ControllerColliderHit hit)
     {
-        if (1 << hit.collider.gameObject.layer == LayerMask.GetMask("Ground"))
+        if (1 << hit.collider.gameObject.layer == 1 << (int)Layer.Ground)
             return;
+    }
+
+    void OnAttackEvent()
+    {
+        if(targetToAttack == null)
+        {
+            Debug.Log("cannot find targetToAttack");
+            return;
+        }
+        LayerMask mask = 1 << (int)Layer.Block;
+        Vector3 delta = targetToAttack.transform.position - transform.position;
+        if (delta.magnitude > swordAttackRange + 0.5f)  // 길이를 0.5만큼 보정
+        {
+            Debug.Log("attackRange is too short");
+            return;
+        }
+        if (Physics.Raycast(transform.position + Vector3.up, transform.forward, swordAttackRange, mask))
+            return;
+
+        CreatureController cc = targetToAttack.GetComponent<CreatureController>();
+        cc.OnDamaged(gameObject, 0);
     }
 
     IEnumerator CoSwordAttack()
     {
-        Transform target = FindSwordAttackTarget();
-        if (target != null)
+        targetToAttack = FindSwordAttackTarget();
+        if (targetToAttack != null)
         {
-            Vector3 targetVec = target.position - transform.position;
+            Vector3 targetVec = targetToAttack.position - transform.position;
             targetVec.y = 0;
             transform.rotation = Quaternion.LookRotation(targetVec);
         }
@@ -311,7 +359,7 @@ public class PlayerController : CreatureController
 
     IEnumerator CoFall()
     {
-        yield return new WaitForSeconds(0.2f);
+        yield return new WaitForSeconds(0.3f);
         if(IsGrounded() == false)
             State = CreatureState.Falling;
         coFall = null;
@@ -342,7 +390,7 @@ public class PlayerController : CreatureController
 
     IEnumerator CoDashCooldown()
     {
-        yield return new WaitForSeconds(0.3f);
+        yield return new WaitForSeconds(0.2f);
         coDashCooldown = null;
     }
 }
