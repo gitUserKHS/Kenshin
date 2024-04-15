@@ -190,7 +190,6 @@ public class PlayerController : CreatureController
     public void HandleCharacterInput()
     {
         ProcessMove();
-        ProcessRotation();
         ProcessMouseInput();
         ProcessKeyInput();
     }
@@ -221,7 +220,7 @@ public class PlayerController : CreatureController
         }
     }
 
-    void ProcessRotation()
+    public void ProcessRotation()
     {
         if (State == CreatureState.Skill)
             return;
@@ -273,6 +272,16 @@ public class PlayerController : CreatureController
         if (Input.GetKeyDown(KeyCode.Space))
         {
             Jump();
+        }
+
+        if (Input.GetKeyDown(KeyCode.C))
+        {
+            // 카메라 시점 전환
+            CameraController cc = Camera.main.GetComponent<CameraController>();
+            if (cc.CamMode == CameraMode.RoundView)
+                cc.CamMode = CameraMode.FirstPersonView;
+            else if(cc.CamMode == CameraMode.FirstPersonView)
+                cc.CamMode= CameraMode.RoundView;
         }
 
         if (Input.GetKeyDown(KeyCode.Alpha1))
