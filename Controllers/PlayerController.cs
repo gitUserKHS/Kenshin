@@ -21,18 +21,25 @@ public class PlayerController : CreatureController
     float gravity = -20f;
     float jumpHeight = 1f;
     float swordAttackRange = 1f;
+    float bowAttackRange = 5f;
 
     float attackSpeed = 1.5f;
     float jumpAnimSpeed = 1.5f;
+
+    string playerSwordPath = "Weapon/PlayerSword";
+    string playerCrossBowPath = "Weapon/PlayerCrossBow";
+    string arrowPath = "Weapon/Arrow";
 
     bool playerSlerping = false;
     bool isMoving = false;
 
     CharacterController controller;
+    WeaponType playerWeaponType = WeaponType.Sword;
 
     [SerializeField]
-    Transform weapon;
+    Transform rightHandWeaponParent;
     Transform targetToAttack;
+    GameObject weapon;
 
     Coroutine coSkill = null;
     Coroutine coJump = null;
@@ -51,11 +58,11 @@ public class PlayerController : CreatureController
 
             if (value == CreatureState.Skill)
             {
-                weapon.gameObject.SetActive(true);
+                rightHandWeaponParent.gameObject.SetActive(true);
             }
             else
             {
-                weapon.gameObject.SetActive(false);
+                rightHandWeaponParent.gameObject.SetActive(false);
             }
 
             if (state == CreatureState.Moving || state == CreatureState.Dashing)
@@ -79,7 +86,10 @@ public class PlayerController : CreatureController
                 animator.CrossFade("RUN", 0.1f);
                 break;
             case CreatureState.Skill:
-                animator.CrossFade("SWORD_ATTACK", 0.1f);
+                if (playerWeaponType == WeaponType.Sword)
+                    animator.CrossFade("SWORD_ATTACK", 0.1f);
+                else if (playerWeaponType == WeaponType.CrossBow)
+                    animator.CrossFade("BOW_ATTACK", 0.05f);
                 break;
             case CreatureState.Die:
                 break;
@@ -106,7 +116,8 @@ public class PlayerController : CreatureController
         base.Init_Awake();
         WorldObjectType = WorldObject.Player;
         controller = GetComponent<CharacterController>();
-        weapon.gameObject.SetActive(false);
+        weapon = Managers.Resource.Instantiate(playerSwordPath, rightHandWeaponParent);
+        rightHandWeaponParent.gameObject.SetActive(false);
 
         animator.SetFloat("AttackSpeed", attackSpeed);
         animator.SetFloat("JumpAnimSpeed", jumpAnimSpeed);
@@ -181,21 +192,26 @@ public class PlayerController : CreatureController
         ProcessMove();
         ProcessRotation();
         ProcessMouseInput();
-
-        if (Input.GetKeyDown(KeyCode.Space))
-        {
-            Jump();
-        }
+        ProcessKeyInput();
     }
 
     void ProcessMouseInput()
     {
-        if (coSkill == null && Input.GetMouseButton(0) && IsGrounded())
+        if (coSkill == null && Input.GetMouseButton(0) && IsGrounded() && playerWeaponType == WeaponType.Sword)
         {
             Vector3 dir = GetXZinputDir();
-            if(dir != Vector3.zero)
+            if (dir != Vector3.zero)
                 transform.rotation = Quaternion.LookRotation(dir);
+
             coSkill = StartCoroutine(CoSwordAttack());
+        }
+
+        if(coSkill == null && Input.GetMouseButtonDown(0) && IsGrounded())
+        {
+            if(playerWeaponType == WeaponType.CrossBow)
+            {
+                coSkill = StartCoroutine(CoBowAttack());
+            }
         }
        
         if(coDash == null && Input.GetMouseButtonDown(1) && IsGrounded())
@@ -252,6 +268,24 @@ public class PlayerController : CreatureController
         }
     }
 
+    void ProcessKeyInput()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            Jump();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            ChangeWeapon(WeaponType.Sword);
+        }
+
+        if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            ChangeWeapon(WeaponType.CrossBow);
+        }
+    }
+
     void Jump()
     {
         if (State == CreatureState.Jumping || State == CreatureState.Falling)
@@ -266,16 +300,46 @@ public class PlayerController : CreatureController
         }
     }
 
-    Transform FindSwordAttackTarget()
+    void ChangeWeapon(WeaponType targetWeapon)
     {
-        Collider[] monsters = Physics.OverlapSphere(transform.position + Vector3.up, swordAttackRange, LayerMask.GetMask("Monster"));
+        if (playerWeaponType == targetWeapon || coSkill != null)
+            return;
+
+        Managers.Resource.Destroy(weapon);
+        switch (targetWeapon)
+        {
+            case WeaponType.Sword:
+                weapon = Managers.Resource.Instantiate(playerSwordPath, rightHandWeaponParent);
+                playerWeaponType = WeaponType.Sword;
+                break;
+            case WeaponType.CrossBow:
+                weapon = Managers.Resource.Instantiate(playerCrossBowPath, rightHandWeaponParent);
+                playerWeaponType = WeaponType.CrossBow;
+                break;
+        }
+    }
+
+    Transform FindTargetToAttack()
+    {
+        float attackRange = 0f;
+        switch (playerWeaponType)
+        {
+            case WeaponType.Sword:
+                attackRange = swordAttackRange; 
+                break;
+            case WeaponType.CrossBow:
+                attackRange = bowAttackRange;
+                break;
+        }
+
+        Collider[] monsters = Physics.OverlapSphere(transform.position + Vector3.up, attackRange, LayerMask.GetMask("Monster"));
         LayerMask mask = 1 << (int)Layer.Block;
         
         foreach(Collider monster in monsters)
         {
             Vector3 delta = monster.transform.position - transform.position;
 
-            if (delta.y > swordAttackRange * Mathf.Sin(Mathf.Deg2Rad * 45))
+            if (delta.y > swordAttackRange * Mathf.Sin(Mathf.Deg2Rad * 45) && playerWeaponType == WeaponType.Sword)
                 continue;
 
             if(Physics.Raycast(transform.position + Vector3.up, delta, delta.magnitude, mask) == false)
@@ -288,13 +352,13 @@ public class PlayerController : CreatureController
 
     private void OnDrawGizmos()
     {
-        //Gizmos.DrawWireSphere(transform.position + Vector3.up, swordAttackRange);
+        //Gizmos.DrawWireCube(transform.position + Vector3.up, new Vector3(0.1f, 0.1f, 0.1f));
     }
 
     protected override bool IsGrounded()
     {
         LayerMask mask = 1 << (int)Layer.Ground | 1 << (int)Layer.Block;
-        Collider[] colliders = Physics.OverlapBox(transform.position, new Vector3(0.1f, 0.5f, 0.1f), Quaternion.identity, mask);
+        Collider[] colliders = Physics.OverlapBox(transform.position, new Vector3(0.15f, 0.5f, 0.15f), Quaternion.identity, mask);
         return colliders.Length != 0;
     }
 
@@ -307,10 +371,8 @@ public class PlayerController : CreatureController
     void OnAttackEvent()
     {
         if(targetToAttack == null)
-        {
-            Debug.Log("cannot find targetToAttack");
             return;
-        }
+
         LayerMask mask = 1 << (int)Layer.Block;
         Vector3 delta = targetToAttack.transform.position - transform.position;
         if (delta.magnitude > swordAttackRange + 0.5f)  // 길이를 0.5만큼 보정
@@ -327,7 +389,7 @@ public class PlayerController : CreatureController
 
     IEnumerator CoSwordAttack()
     {
-        targetToAttack = FindSwordAttackTarget();
+        targetToAttack = FindTargetToAttack();
         if (targetToAttack != null)
         {
             Vector3 targetVec = targetToAttack.position - transform.position;
@@ -336,6 +398,33 @@ public class PlayerController : CreatureController
         }
         State = CreatureState.Skill;
         yield return new WaitForSeconds(1 / attackSpeed);
+        State = CreatureState.Idle;
+        coSkill = null;
+    }
+
+    IEnumerator CoBowAttack()
+    {
+        targetToAttack = FindTargetToAttack();
+        if (targetToAttack != null)
+        {
+            Vector3 targetVec = targetToAttack.position - transform.position;
+            targetVec.y = 0;
+            transform.rotation = Quaternion.LookRotation(targetVec);
+        }
+
+        State = CreatureState.Skill;
+        yield return new WaitForSeconds(0.1f);
+
+        // spawn arrow
+        Quaternion arrowRot = transform.rotation * Quaternion.Euler(new Vector3(-5, 0, 0));
+        GameObject arrow = Managers.Resource.Instantiate(arrowPath, count: 10);
+        arrow.transform.position = rightHandWeaponParent.position;
+        arrow.transform.rotation = arrowRot;
+        ArrowController ac = arrow.GetOrAddComponent<ArrowController>();
+        ac.Owner = gameObject;
+        ac.Init();
+
+        yield return new WaitForSeconds(0.2f);
         State = CreatureState.Idle;
         coSkill = null;
     }

@@ -99,10 +99,10 @@ public class PoolManager : MonoBehaviour
         pool[name].Push(poolable);
     }
 
-    public Poolable Pop(GameObject original, Transform parent = null)
+    public Poolable Pop(GameObject original, Transform parent = null, int count = 5)
     {
         if (pool.ContainsKey(original.name) == false)
-            CreatePool(original);  
+            CreatePool(original, count);  
         return pool[original.name].Pop(parent);
     }
 

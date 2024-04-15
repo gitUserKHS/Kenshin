@@ -3,10 +3,9 @@ using System.Collections.Generic;
 using UnityEditor;
 using UnityEngine;
 
-public class WarriorSpawnPoint : MonoBehaviour
+public class WarriorSpawnPoint : BaseSpawnPoint
 {
-    float spawnCoolTime = 10.0f;
-    string prefabPath = "Prefabs/Creature/Monster/Warrior";
+    string prefabPath = "Creature/Monster/Warrior";
     GameObject warrior;
 
     public bool IsDead { get; set; } = false;
@@ -20,8 +19,7 @@ public class WarriorSpawnPoint : MonoBehaviour
 
     private void SpawnWarrior()
     {
-        warrior = Managers.Resource.Load<GameObject>(prefabPath);
-        Object.Instantiate<GameObject>(warrior, transform.position, Quaternion.identity, transform);
+        warrior = Managers.Resource.Instantiate(prefabPath, transform.position, Quaternion.identity, transform);
     }
 
     void Update()
@@ -30,12 +28,12 @@ public class WarriorSpawnPoint : MonoBehaviour
         {
             coSpawn = StartCoroutine(CoSpawnWithCoolDown());
         }
-        Debug.Log(warrior);
     }
 
     IEnumerator CoSpawnWithCoolDown()
     {
-        yield return new WaitForSeconds(spawnCoolTime);
+        //Managers.UI.MakeWorldSpaceUI<UI_SpawnCoolDown>(transform);
+        yield return new WaitForSeconds(SpawnCoolTime);
         SpawnWarrior();
         IsDead = false;
         coSpawn = null;

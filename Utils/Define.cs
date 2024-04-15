@@ -11,6 +11,13 @@ public class Define
         Monster
     }
 
+    public enum WeaponType
+    {
+        None,
+        Sword,
+        CrossBow
+    }
+
     public enum CreatureState
     {
         Die,
@@ -58,6 +65,7 @@ public class Define
 
     public enum CameraMode
     {
-        QuarterView
+        RoundView,
+        FirstPersonView
     }
 }

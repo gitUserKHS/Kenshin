@@ -22,7 +22,7 @@ public class ResourceManager
         return Resources.Load<T>(path);
     }
 
-    public GameObject Instantiate(string path, Transform parent = null)
+    public GameObject Instantiate(string path, Transform parent = null, int count = 5)
     {
         GameObject original = Load<GameObject>($"Prefabs/{path}");
         if(original == null)
@@ -32,9 +32,24 @@ public class ResourceManager
         }
 
         if(original.GetComponent<Poolable>() != null)
-            return Managers.Pool.Pop(original, parent).gameObject;
+            return Managers.Pool.Pop(original, parent, count).gameObject;
 
         GameObject go = Object.Instantiate(original, parent);
+        go.name = original.name;
+
+        return go;
+    }
+
+    public GameObject Instantiate(string path, Vector3 pos, Quaternion rotation, Transform parent = null)
+    {
+        GameObject original = Load<GameObject>($"Prefabs/{path}");
+        if (original == null)
+        {
+            Debug.Log($"Failed to load prefab: {path}");
+            return null;
+        }
+
+        GameObject go = Object.Instantiate(original, pos, rotation, parent);
         go.name = original.name;
 
         return go;
