@@ -28,6 +28,9 @@ public class ArrowController : MonoBehaviour
 
     private void OnTriggerEnter(Collider other)
     {
+        if (other.gameObject == Owner)
+            return;
+
         LayerMask mask = 1 << (int)Layer.Monster;
         if(mask == 1 << other.gameObject.layer)
         {

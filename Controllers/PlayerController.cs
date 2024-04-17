@@ -34,7 +34,13 @@ public class PlayerController : CreatureController
     bool isMoving = false;
 
     CharacterController controller;
+    CameraController cameraController;
     WeaponType playerWeaponType = WeaponType.Sword;
+
+    [SerializeField]
+    Transform playerSpine;
+    public Transform PlayerSpine { get {return playerSpine; }}
+    Transform playerSpinePoint;
 
     [SerializeField]
     Transform rightHandWeaponParent;
@@ -116,6 +122,7 @@ public class PlayerController : CreatureController
         base.Init_Awake();
         WorldObjectType = WorldObject.Player;
         controller = GetComponent<CharacterController>();
+        cameraController = Camera.main.GetComponent<CameraController>();
         weapon = Managers.Resource.Instantiate(playerSwordPath, rightHandWeaponParent);
         rightHandWeaponParent.gameObject.SetActive(false);
 
@@ -229,11 +236,11 @@ public class PlayerController : CreatureController
         if (lookDir == Vector3.zero)
             return;
        
-        if (Mathf.Abs(Quaternion.Angle(transform.rotation, Quaternion.LookRotation(lookDir))) > 20 || playerSlerping)
+        if (Quaternion.Angle(transform.rotation, Quaternion.LookRotation(lookDir)) > 20 || playerSlerping)
         {
             playerSlerping = true;
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(lookDir), 30 * Time.deltaTime);
-            if (Mathf.Abs(Quaternion.Angle(transform.rotation, Quaternion.LookRotation(lookDir))) < 1f)
+            if (Quaternion.Angle(transform.rotation, Quaternion.LookRotation(lookDir)) < 1f)
                 playerSlerping = false;
         }
         else
@@ -277,11 +284,10 @@ public class PlayerController : CreatureController
         if (Input.GetKeyDown(KeyCode.C))
         {
             // 카메라 시점 전환
-            CameraController cc = Camera.main.GetComponent<CameraController>();
-            if (cc.CamMode == CameraMode.RoundView)
-                cc.CamMode = CameraMode.FirstPersonView;
-            else if(cc.CamMode == CameraMode.FirstPersonView)
-                cc.CamMode= CameraMode.RoundView;
+            if (cameraController.CamMode == CameraMode.RoundView)
+                cameraController.CamMode = CameraMode.FirstPersonView;
+            else if(cameraController.CamMode == CameraMode.FirstPersonView)
+                cameraController.CamMode= CameraMode.RoundView;
         }
 
         if (Input.GetKeyDown(KeyCode.Alpha1))
@@ -397,9 +403,9 @@ public class PlayerController : CreatureController
     }
 
     IEnumerator CoSwordAttack()
-    {
+    { 
         targetToAttack = FindTargetToAttack();
-        if (targetToAttack != null)
+        if (targetToAttack != null && cameraController.CamMode == CameraMode.RoundView)
         {
             Vector3 targetVec = targetToAttack.position - transform.position;
             targetVec.y = 0;
@@ -412,9 +418,9 @@ public class PlayerController : CreatureController
     }
 
     IEnumerator CoBowAttack()
-    {
+    { 
         targetToAttack = FindTargetToAttack();
-        if (targetToAttack != null)
+        if (targetToAttack != null && cameraController.CamMode == CameraMode.RoundView)
         {
             Vector3 targetVec = targetToAttack.position - transform.position;
             targetVec.y = 0;
@@ -426,6 +432,8 @@ public class PlayerController : CreatureController
 
         // spawn arrow
         Quaternion arrowRot = transform.rotation * Quaternion.Euler(new Vector3(-5, 0, 0));
+        if (cameraController.CamMode == CameraMode.FirstPersonView)
+            arrowRot = Camera.main.transform.rotation * Quaternion.Euler(new Vector3(-5, 0, 0));
         GameObject arrow = Managers.Resource.Instantiate(arrowPath, count: 10);
         arrow.transform.position = rightHandWeaponParent.position;
         arrow.transform.rotation = arrowRot;

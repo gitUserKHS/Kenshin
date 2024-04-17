@@ -1,7 +1,9 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEditor.SceneManagement;
 using UnityEngine;
+using UnityEngine.SocialPlatforms;
 using UnityEngine.UIElements;
 using static Define;
 
@@ -13,6 +15,9 @@ public class CameraController : MonoBehaviour
     [SerializeField]
     GameObject player;
     PlayerController playerController;
+
+    float camRotationSpeed = 5f;
+    float camMoveSpeed = 5f;
 
     CameraMode camMode = CameraMode.RoundView;
     public CameraMode CamMode { 
@@ -31,9 +36,9 @@ public class CameraController : MonoBehaviour
             else if(value == CameraMode.RoundView)
             {
                 camDir = player.transform.forward * -3.5f + player.transform.up * 1.5f;
-                transform.position = focusPos + camDir;
                 transform.parent = Managers.Scene.CurrentScene.transform;
-                transform.LookAt(focusPos);
+                transform.position = focusPos + camDir;
+                transform.rotation = Quaternion.LookRotation(focusPos - transform.position);
             }
 
             camMode = value;
@@ -55,6 +60,7 @@ public class CameraController : MonoBehaviour
     float focusDist = 3f;
     float yAngleUpperLimit = 60 * Mathf.PI / 180;
     float yAngleLowerLimit = 5 * Mathf.PI / 180;
+    float yAngleLimit_FirstPerson = 30;
 
     private void Awake()
     {
@@ -114,9 +120,10 @@ public class CameraController : MonoBehaviour
 
         float xRotation = mouseDeltaY * sensitivity;
         currentRotationX -= xRotation;
-        currentRotationX = Mathf.Clamp(currentRotationX, -yAngleUpperLimit * Mathf.Rad2Deg, yAngleUpperLimit * Mathf.Rad2Deg);
+        currentRotationX = Mathf.Clamp(currentRotationX, -yAngleLimit_FirstPerson, yAngleLimit_FirstPerson);
         player.transform.rotation *= Quaternion.Euler(0, mouseDeltaX * sensitivity, 0);
         transform.localRotation = Quaternion.Euler(currentRotationX, 0, 0);
+        playerController.PlayerSpine.localRotation = Quaternion.Euler(0, 0, -currentRotationX);
     }
 
     void Zoom()
