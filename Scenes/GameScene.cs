@@ -6,6 +6,7 @@ using UnityEngine.UIElements;
 
 public class GameScene : BaseScene
 {
+    public ItemDataManager ItemDataManager { get; private set; }
 
     protected override void Init()
     {
@@ -13,14 +14,8 @@ public class GameScene : BaseScene
 
         SceneType = Define.Scene.Game;
         this.GetOrAddComponent<CursorController>();
-
-        //Managers.UI.ShowSceneUI<UI_Inven>();
-        //Dictionary<int, Data.Stat> dict = Managers.Data.StatDict;
-
-        //Managers.Game.Spawn(Define.WorldObject.Monster, "Knight");
-        //GameObject go = new GameObject { name = "SpawningPool" };
-        //SpawningPool pool = go.GetOrAddComponent<SpawningPool>();
-        //pool.SetKeepMonsterCount(3);
+        ItemDataManager = Managers.Resource.Instantiate("Item/ItemDataManager").GetComponent<ItemDataManager>();
+        
     }
 
     public override void Clear()

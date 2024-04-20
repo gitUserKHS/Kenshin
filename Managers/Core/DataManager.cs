@@ -1,4 +1,5 @@
 using OpenCover.Framework.Model;
+using Rito.InventorySystem;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -13,6 +14,7 @@ public interface ILoader<Key, Value>
 public class DataManager
 {
     public Dictionary<int, Data.Stat> StatDict { get; private set; } = new Dictionary<int, Data.Stat>();
+
     public void Init()
     {
         //StatDict = LoadJson<Data.StatData, int, Data.Stat>("StatData").MakeDict();

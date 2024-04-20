@@ -1,3 +1,4 @@
+using Rito.InventorySystem;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -7,6 +8,7 @@ using System.Threading;
 using Unity.VisualScripting;
 using UnityEditor.Timeline.Actions;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
 using static Define;
@@ -35,12 +37,16 @@ public class PlayerController : CreatureController
 
     CharacterController controller;
     CameraController cameraController;
+    ItemDataManager itemDataManager;
     WeaponType playerWeaponType = WeaponType.Sword;
 
     [SerializeField]
     Transform playerSpine;
     public Transform PlayerSpine { get {return playerSpine; }}
     Transform playerSpinePoint;
+
+    Transform inventoryHolder;
+    Inventory inventoryManager;
 
     [SerializeField]
     Transform rightHandWeaponParent;
@@ -126,8 +132,33 @@ public class PlayerController : CreatureController
         weapon = Managers.Resource.Instantiate(playerSwordPath, rightHandWeaponParent);
         rightHandWeaponParent.gameObject.SetActive(false);
 
+        inventoryHolder = Managers.Resource.Instantiate("UI/Inventory/InvenHolder").transform;
+        inventoryManager = inventoryHolder.GetComponentInChildren<Inventory>();
+        inventoryHolder.gameObject.SetActive(false);
+
         animator.SetFloat("AttackSpeed", attackSpeed);
         animator.SetFloat("JumpAnimSpeed", jumpAnimSpeed);
+    }
+
+    protected override void Init_Start()
+    {
+        if(Managers.Scene.CurrentScene is GameScene)
+        {
+            itemDataManager = Managers.Scene.CurrentScene.GetComponent<GameScene>().ItemDataManager;
+        }
+
+        TestMethod_addInvenItems();
+    }
+
+    void TestMethod_addInvenItems()
+    {
+        foreach (var itemData in itemDataManager.ItemDataArray)
+        {
+            if (itemData is CountableItemData)
+                inventoryManager.Add(itemData, 255);
+            else
+                inventoryManager.Add(itemData, 2);
+        }
     }
 
     protected override void UpdateController()
@@ -203,6 +234,9 @@ public class PlayerController : CreatureController
 
     void ProcessMouseInput()
     {
+        if (EventSystem.current.IsPointerOverGameObject())
+            return;
+
         if (coSkill == null && Input.GetMouseButton(0) && IsGrounded() && playerWeaponType == WeaponType.Sword)
         {
             Vector3 dir = GetXZinputDir();
@@ -288,6 +322,14 @@ public class PlayerController : CreatureController
                 cameraController.CamMode = CameraMode.FirstPersonView;
             else if(cameraController.CamMode == CameraMode.FirstPersonView)
                 cameraController.CamMode= CameraMode.RoundView;
+        }
+
+        if (Input.GetKeyDown(KeyCode.I))
+        {
+            if(inventoryHolder.gameObject.activeSelf)
+                inventoryHolder.gameObject.SetActive(false);
+            else
+                inventoryHolder.gameObject.SetActive(true);
         }
 
         if (Input.GetKeyDown(KeyCode.Alpha1))
