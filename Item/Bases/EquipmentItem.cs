@@ -13,6 +13,8 @@ namespace Rito.InventorySystem
     {
         public EquipmentItemData EquipmentData { get; private set; }
 
+        public bool IsUsed { get; set; } = false;
+
         /// <summary> 현재 내구도 </summary>
         public int Durability
         {

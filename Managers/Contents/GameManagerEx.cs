@@ -8,5 +8,6 @@ public class GameManagerEx
 
     public GameObject GetPlayer() { return player; }
 
+    public void SetPlayer(GameObject p) { player = p; }
 
 }

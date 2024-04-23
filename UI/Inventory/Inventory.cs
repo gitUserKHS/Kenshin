@@ -202,7 +202,19 @@ namespace Rito.InventorySystem
                         _inventoryUI.SetItemAmountText(index, ci.Amount);
                     }
                 }
-                // 1-2. 셀 수 없는 아이템인 경우 수량 텍스트 제거
+                // 1-3. 착용 가능한 아이템인 경우 IsUsed를 확인 후 수량 텍스트 제거
+                else if (item is EquipmentItem ei)
+                {
+                    if (ei.IsUsed)
+                    {
+                        _items[index] = null;
+                        RemoveIcon();
+                        return;
+                    }
+                    else
+                        _inventoryUI.HideItemAmountText(index);
+                }
+                // 1-3. 셀 수 없는 아이템인 경우 수량 텍스트 제거
                 else
                 {
                     _inventoryUI.HideItemAmountText(index);

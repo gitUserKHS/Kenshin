@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using static Define;
 
 // 날짜 : 2021-03-28 PM 10:42:17
 // 작성자 : Rito
@@ -13,6 +14,11 @@ namespace Rito.InventorySystem
     public class ArmorItemData : EquipmentItemData
     {
         /// <summary> 방어력 </summary>
+       
+        public ArmorType Type { get { return _type; } }
+
+        [SerializeField] private ArmorType _type = ArmorType.Chestplate;
+
         public int Defence => _defence;
 
         [SerializeField] private int _defence = 1;

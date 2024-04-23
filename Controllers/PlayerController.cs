@@ -40,13 +40,16 @@ public class PlayerController : CreatureController
     ItemDataManager itemDataManager;
     WeaponType playerWeaponType = WeaponType.Sword;
 
+    public ArmorItemData[] PlayerArmors { get; set; } = new ArmorItemData[(int)ArmorType.Count];
+    public WeaponItemData[] PlayerWeapons { get; set; } = new WeaponItemData[(int)WeaponType.Count];
+
     [SerializeField]
     Transform playerSpine;
     public Transform PlayerSpine { get {return playerSpine; }}
-    Transform playerSpinePoint;
 
+    Transform statUiHolder;
     Transform inventoryHolder;
-    Inventory inventoryManager;
+    public Inventory InventoryManager { get; set; }
 
     [SerializeField]
     Transform rightHandWeaponParent;
@@ -132,8 +135,10 @@ public class PlayerController : CreatureController
         weapon = Managers.Resource.Instantiate(playerSwordPath, rightHandWeaponParent);
         rightHandWeaponParent.gameObject.SetActive(false);
 
+        statUiHolder = Managers.Resource.Instantiate("UI/StatUI/StatUiHolder").transform;
         inventoryHolder = Managers.Resource.Instantiate("UI/Inventory/InvenHolder").transform;
-        inventoryManager = inventoryHolder.GetComponentInChildren<Inventory>();
+        InventoryManager = inventoryHolder.GetComponentInChildren<Inventory>();
+        statUiHolder.gameObject.SetActive(false);
         inventoryHolder.gameObject.SetActive(false);
 
         animator.SetFloat("AttackSpeed", attackSpeed);
@@ -142,6 +147,8 @@ public class PlayerController : CreatureController
 
     protected override void Init_Start()
     {
+        Managers.Game.SetPlayer(gameObject);
+
         if(Managers.Scene.CurrentScene is GameScene)
         {
             itemDataManager = Managers.Scene.CurrentScene.GetComponent<GameScene>().ItemDataManager;
@@ -155,9 +162,9 @@ public class PlayerController : CreatureController
         foreach (var itemData in itemDataManager.ItemDataArray)
         {
             if (itemData is CountableItemData)
-                inventoryManager.Add(itemData, 255);
+                InventoryManager.Add(itemData, 255);
             else
-                inventoryManager.Add(itemData, 2);
+                InventoryManager.Add(itemData, 2);
         }
     }
 
@@ -330,6 +337,14 @@ public class PlayerController : CreatureController
                 inventoryHolder.gameObject.SetActive(false);
             else
                 inventoryHolder.gameObject.SetActive(true);
+        }
+
+        if (Input.GetKeyDown(KeyCode.U))
+        {
+            if(statUiHolder.gameObject.activeSelf)
+                statUiHolder.gameObject.SetActive(false);
+            else
+                statUiHolder.gameObject.SetActive(true);
         }
 
         if (Input.GetKeyDown(KeyCode.Alpha1))

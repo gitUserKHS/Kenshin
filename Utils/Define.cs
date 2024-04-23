@@ -11,11 +11,20 @@ public class Define
         Monster
     }
 
+    public enum ArmorType
+    {
+        Helmet,
+        Chestplate,
+        Leggings,
+        Boots,
+        Count
+    }
+
     public enum WeaponType
     {
-        None,
         Sword,
-        CrossBow
+        CrossBow,
+        Count
     }
 
     public enum CreatureState
