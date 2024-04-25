@@ -23,6 +23,7 @@ namespace Rito.InventorySystem
             if (pc.PlayerWeapons[idx] != null)
                 return false;
             pc.PlayerWeapons[idx] = weaponItemData;
+            pc.PlayerWeaponType = weaponItemData.Type;
             IsUsed = true;
             return true;
         }

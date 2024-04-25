@@ -22,6 +22,7 @@ public class Define
 
     public enum WeaponType
     {
+        None,
         Sword,
         CrossBow,
         Count

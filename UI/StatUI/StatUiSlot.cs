@@ -16,8 +16,9 @@ public class StatUiSlot : MonoBehaviour, IPointerClickHandler
 
     [SerializeField] SlotType slotType;
     [SerializeField] ArmorType armorType;
-    [SerializeField] WeaponType weaponType;
     [SerializeField] Image IconImage;
+    
+    //WeaponType weaponType = WeaponType.None;
 
     Color defaultColor;
     bool isColorChanged = false;
@@ -28,10 +29,10 @@ public class StatUiSlot : MonoBehaviour, IPointerClickHandler
         switch (slotType)
         {
            case SlotType.Weapon:
-                if (pc.PlayerWeapons[(int)weaponType] == null)
+                if (pc.PlayerWeapons[(int)pc.PlayerWeaponType] == null)
                     IconImage.sprite = null;
-                else if(IconImage.sprite == null)
-                        IconImage.sprite = pc.PlayerWeapons[(int)weaponType].IconSprite;
+                else if (IconImage.sprite == null)
+                    IconImage.sprite = pc.PlayerWeapons[(int)pc.PlayerWeaponType].IconSprite;
                 break;
             case SlotType.Armor:
                 if (pc.PlayerArmors[(int)armorType] == null)
@@ -66,9 +67,10 @@ public class StatUiSlot : MonoBehaviour, IPointerClickHandler
         switch (slotType)
         {
             case SlotType.Weapon:
-                WeaponItemData wid = pc.PlayerWeapons[(int)weaponType];
-                pc.PlayerWeapons[(int)weaponType] = null;
+                WeaponItemData wid = pc.PlayerWeapons[(int)pc.PlayerWeaponType];
+                pc.PlayerWeapons[(int)pc.PlayerWeaponType] = null;
                 pc.InventoryManager.Add(wid);
+                pc.PlayerWeaponType = WeaponType.None;
                 break;
             case SlotType.Armor:
                 ArmorItemData aid = pc.PlayerArmors[(int)armorType];

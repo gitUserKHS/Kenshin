@@ -37,8 +37,20 @@ public class PlayerController : CreatureController
 
     CharacterController controller;
     CameraController cameraController;
-    ItemDataManager itemDataManager;
-    WeaponType playerWeaponType = WeaponType.Sword;
+    Dictionary<int, ItemData> itemDataDict;
+
+    WeaponType weaponType = WeaponType.None;
+    public WeaponType PlayerWeaponType { 
+        get { return weaponType; }
+        set 
+        {
+            if (value == weaponType)
+                return;
+
+            StartCoroutine(CoTryChangeWeapon(value));
+            weaponType = value;
+        } 
+    }
 
     public ArmorItemData[] PlayerArmors { get; set; } = new ArmorItemData[(int)ArmorType.Count];
     public WeaponItemData[] PlayerWeapons { get; set; } = new WeaponItemData[(int)WeaponType.Count];
@@ -54,7 +66,7 @@ public class PlayerController : CreatureController
     [SerializeField]
     Transform rightHandWeaponParent;
     Transform targetToAttack;
-    GameObject weapon;
+    GameObject playerWeapon;
 
     Coroutine coSkill = null;
     Coroutine coJump = null;
@@ -73,6 +85,8 @@ public class PlayerController : CreatureController
 
             if (value == CreatureState.Skill)
             {
+                if (PlayerWeaponType == WeaponType.None)
+                    return;
                 rightHandWeaponParent.gameObject.SetActive(true);
             }
             else
@@ -101,9 +115,9 @@ public class PlayerController : CreatureController
                 animator.CrossFade("RUN", 0.1f);
                 break;
             case CreatureState.Skill:
-                if (playerWeaponType == WeaponType.Sword)
+                if (PlayerWeaponType == WeaponType.Sword)
                     animator.CrossFade("SWORD_ATTACK", 0.1f);
-                else if (playerWeaponType == WeaponType.CrossBow)
+                else if (PlayerWeaponType == WeaponType.CrossBow)
                     animator.CrossFade("BOW_ATTACK", 0.05f);
                 break;
             case CreatureState.Die:
@@ -132,7 +146,6 @@ public class PlayerController : CreatureController
         WorldObjectType = WorldObject.Player;
         controller = GetComponent<CharacterController>();
         cameraController = Camera.main.GetComponent<CameraController>();
-        weapon = Managers.Resource.Instantiate(playerSwordPath, rightHandWeaponParent);
         rightHandWeaponParent.gameObject.SetActive(false);
 
         statUiHolder = Managers.Resource.Instantiate("UI/StatUI/StatUiHolder").transform;
@@ -151,20 +164,26 @@ public class PlayerController : CreatureController
 
         if(Managers.Scene.CurrentScene is GameScene)
         {
-            itemDataManager = Managers.Scene.CurrentScene.GetComponent<GameScene>().ItemDataManager;
+            itemDataDict = Managers.Scene.CurrentScene.GetComponent<GameScene>().ItemDataDict;
+            AddInvenItems();
         }
-
-        TestMethod_addInvenItems();
+        
+        // ID = 1 -> 장검
+        if (itemDataDict.TryGetValue(1, out ItemData itemData) == false)
+            Debug.LogError("id에 해당하는 아이템이 없습니다");
+        var data = itemData as WeaponItemData;
+        PlayerWeapons[(int)data.Type] = data;
+        PlayerWeaponType = data.Type;
     }
 
-    void TestMethod_addInvenItems()
+    void AddInvenItems()
     {
-        foreach (var itemData in itemDataManager.ItemDataArray)
+        foreach (var itemData in itemDataDict.Values)
         {
             if (itemData is CountableItemData)
-                InventoryManager.Add(itemData, 255);
+                InventoryManager.Add(itemData, 20);
             else
-                InventoryManager.Add(itemData, 2);
+                InventoryManager.Add(itemData, 1);
         }
     }
 
@@ -244,7 +263,7 @@ public class PlayerController : CreatureController
         if (EventSystem.current.IsPointerOverGameObject())
             return;
 
-        if (coSkill == null && Input.GetMouseButton(0) && IsGrounded() && playerWeaponType == WeaponType.Sword)
+        if (coSkill == null && Input.GetMouseButton(0) && IsGrounded() && PlayerWeaponType == WeaponType.Sword)
         {
             Vector3 dir = GetXZinputDir();
             if (dir != Vector3.zero)
@@ -255,7 +274,7 @@ public class PlayerController : CreatureController
 
         if(coSkill == null && Input.GetMouseButtonDown(0) && IsGrounded())
         {
-            if(playerWeaponType == WeaponType.CrossBow)
+            if(PlayerWeaponType == WeaponType.CrossBow)
             {
                 coSkill = StartCoroutine(CoBowAttack());
             }
@@ -347,15 +366,15 @@ public class PlayerController : CreatureController
                 statUiHolder.gameObject.SetActive(true);
         }
 
-        if (Input.GetKeyDown(KeyCode.Alpha1))
-        {
-            ChangeWeapon(WeaponType.Sword);
-        }
+        //if (Input.GetKeyDown(KeyCode.Alpha1))
+        //{
+        //    ChangeWeapon(WeaponType.Sword);
+        //}
 
-        if (Input.GetKeyDown(KeyCode.Alpha2))
-        {
-            ChangeWeapon(WeaponType.CrossBow);
-        }
+        //if (Input.GetKeyDown(KeyCode.Alpha2))
+        //{
+        //    ChangeWeapon(WeaponType.CrossBow);
+        //}
     }
 
     void Jump()
@@ -374,19 +393,19 @@ public class PlayerController : CreatureController
 
     void ChangeWeapon(WeaponType targetWeapon)
     {
-        if (playerWeaponType == targetWeapon || coSkill != null)
+        if (PlayerWeaponType == targetWeapon)
             return;
 
-        Managers.Resource.Destroy(weapon);
+        Managers.Resource.Destroy(playerWeapon);
         switch (targetWeapon)
         {
+            case WeaponType.None:
+                break;
             case WeaponType.Sword:
-                weapon = Managers.Resource.Instantiate(playerSwordPath, rightHandWeaponParent);
-                playerWeaponType = WeaponType.Sword;
+                playerWeapon = Managers.Resource.Instantiate(playerSwordPath, rightHandWeaponParent);
                 break;
             case WeaponType.CrossBow:
-                weapon = Managers.Resource.Instantiate(playerCrossBowPath, rightHandWeaponParent);
-                playerWeaponType = WeaponType.CrossBow;
+                playerWeapon = Managers.Resource.Instantiate(playerCrossBowPath, rightHandWeaponParent);
                 break;
         }
     }
@@ -394,7 +413,7 @@ public class PlayerController : CreatureController
     Transform FindTargetToAttack()
     {
         float attackRange = 0f;
-        switch (playerWeaponType)
+        switch (PlayerWeaponType)
         {
             case WeaponType.Sword:
                 attackRange = swordAttackRange; 
@@ -411,7 +430,7 @@ public class PlayerController : CreatureController
         {
             Vector3 delta = monster.transform.position - transform.position;
 
-            if (delta.y > swordAttackRange * Mathf.Sin(Mathf.Deg2Rad * 45) && playerWeaponType == WeaponType.Sword)
+            if (delta.y > swordAttackRange * Mathf.Sin(Mathf.Deg2Rad * 45) && PlayerWeaponType == WeaponType.Sword)
                 continue;
 
             if(Physics.Raycast(transform.position + Vector3.up, delta, delta.magnitude, mask) == false)
@@ -457,6 +476,16 @@ public class PlayerController : CreatureController
 
         CreatureController cc = targetToAttack.GetComponent<CreatureController>();
         cc.OnDamaged(gameObject, 0);
+    }
+
+    IEnumerator CoTryChangeWeapon(WeaponType type)
+    {
+        while(coSkill != null)
+        {
+            yield return null;
+        }
+
+        ChangeWeapon(type);
     }
 
     IEnumerator CoSwordAttack()
