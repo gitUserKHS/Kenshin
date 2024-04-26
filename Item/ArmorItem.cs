@@ -20,10 +20,15 @@ namespace Rito.InventorySystem
             ArmorItemData armorItemData = Data as ArmorItemData;
             GameObject player = Managers.Game.GetPlayer();
             PlayerController pc = player.GetComponent<PlayerController>();
-
+ 
             int idx = (int)armorItemData.Type;
             if (pc.PlayerArmors[idx] != null)
-                return false;
+            {
+                pc.InventoryManager.Add(pc.PlayerArmors[idx]);
+                pc.PlayerArmors[idx] = null;
+            }
+            //if (pc.PlayerArmors[idx] != null)
+            //    return false;
             pc.PlayerArmors[idx] = armorItemData;
             IsUsed = true;
             return true;

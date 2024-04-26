@@ -19,9 +19,19 @@ namespace Rito.InventorySystem
             GameObject player = Managers.Game.GetPlayer();
             PlayerController pc = player.GetComponent<PlayerController>();
 
+            for(int i = 0; i < pc.PlayerWeapons.Length; i++)
+            {
+                if(pc.PlayerWeapons[i] != null)
+                {
+                    pc.InventoryManager.Add(pc.PlayerWeapons[i]);
+                    pc.PlayerWeapons[i] = null;
+                    pc.PlayerWeaponType = Define.WeaponType.None;
+                }
+            }
+
             int idx = (int)weaponItemData.Type;
-            if (pc.PlayerWeapons[idx] != null)
-                return false;
+            //if (pc.PlayerWeapons[idx] != null)
+            //    return false;
             pc.PlayerWeapons[idx] = weaponItemData;
             pc.PlayerWeaponType = weaponItemData.Type;
             IsUsed = true;

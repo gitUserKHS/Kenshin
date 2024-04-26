@@ -31,13 +31,13 @@ public class StatUiSlot : MonoBehaviour, IPointerClickHandler
            case SlotType.Weapon:
                 if (pc.PlayerWeapons[(int)pc.PlayerWeaponType] == null)
                     IconImage.sprite = null;
-                else if (IconImage.sprite == null)
+                else if (IconImage.sprite != pc.PlayerWeapons[(int)pc.PlayerWeaponType].IconSprite)
                     IconImage.sprite = pc.PlayerWeapons[(int)pc.PlayerWeaponType].IconSprite;
                 break;
             case SlotType.Armor:
                 if (pc.PlayerArmors[(int)armorType] == null)
                     IconImage.sprite = null;
-                else if (IconImage.sprite == null)
+                else if (IconImage.sprite != pc.PlayerArmors[(int)armorType].IconSprite)
                     IconImage.sprite = pc.PlayerArmors[(int)armorType].IconSprite;
                 break;
         }

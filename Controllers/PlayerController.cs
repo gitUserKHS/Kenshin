@@ -183,7 +183,7 @@ public class PlayerController : CreatureController
             if (itemData is CountableItemData)
                 InventoryManager.Add(itemData, 20);
             else
-                InventoryManager.Add(itemData, 1);
+                InventoryManager.Add(itemData, 2);
         }
     }
 
