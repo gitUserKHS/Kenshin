@@ -6,6 +6,7 @@ using static Define;
 public class CreatureController : BaseController
 {
     protected CreatureState state = CreatureState.Idle;
+    public Stat Stat { get; set; }
 
     public virtual CreatureState State
     {

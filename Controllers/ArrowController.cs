@@ -34,8 +34,22 @@ public class ArrowController : MonoBehaviour
         LayerMask mask = 1 << (int)Layer.Monster;
         if(mask == 1 << other.gameObject.layer)
         {
-            MonsterController mc = other.gameObject.GetComponent<MonsterController>();
-            mc.OnDamaged(Owner, 5);
+            Stat opponentStat = other.gameObject.GetComponent<Stat>();
+            Stat ownerStat = Owner.GetComponent<CreatureController>().Stat;
+
+            WorldObject objType = Managers.Game.GetWorldObjectType(Owner);
+
+            switch (objType)
+            {
+                case WorldObject.Player:
+                    opponentStat.OnAttacked(ownerStat, Owner.GetComponent<PlayerController>().AdditionalDmg);
+                    break;
+
+                default:
+                    opponentStat.OnAttacked(ownerStat, 0);
+                    break;
+            }
+                
         }
         Managers.Resource.Destroy(gameObject);
     }

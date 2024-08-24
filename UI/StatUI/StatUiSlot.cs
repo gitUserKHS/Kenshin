@@ -23,22 +23,36 @@ public class StatUiSlot : MonoBehaviour, IPointerClickHandler
     Color defaultColor;
     bool isColorChanged = false;
 
+    PlayerController playerController;
+
+    void Start()
+    {
+        playerController = Managers.Game.GetPlayer().GetComponent<PlayerController>();
+    }
+
     void Update()
     {
-        PlayerController pc = Managers.Game.GetPlayer().GetComponent<PlayerController>();
+        if(playerController == null)
+        {
+            Debug.Log("statUiSlot: player controller is null");
+            return;
+        }
+
         switch (slotType)
         {
            case SlotType.Weapon:
-                if (pc.PlayerWeapons[(int)pc.PlayerWeaponType] == null)
+                if (playerController.PlayerWeapons[(int)playerController.PlayerWeaponType] == null)
                     IconImage.sprite = null;
-                else if (IconImage.sprite != pc.PlayerWeapons[(int)pc.PlayerWeaponType].IconSprite)
-                    IconImage.sprite = pc.PlayerWeapons[(int)pc.PlayerWeaponType].IconSprite;
+                else if (IconImage.sprite != playerController.PlayerWeapons[(int)playerController.PlayerWeaponType].IconSprite)
+                    IconImage.sprite = playerController.PlayerWeapons[(int)playerController.PlayerWeaponType].IconSprite;
                 break;
             case SlotType.Armor:
-                if (pc.PlayerArmors[(int)armorType] == null)
+                if (playerController.PlayerArmors[(int)armorType] == null)
+                {
                     IconImage.sprite = null;
-                else if (IconImage.sprite != pc.PlayerArmors[(int)armorType].IconSprite)
-                    IconImage.sprite = pc.PlayerArmors[(int)armorType].IconSprite;
+                }
+                else if (IconImage.sprite != playerController.PlayerArmors[(int)armorType].IconSprite)
+                    IconImage.sprite = playerController.PlayerArmors[(int)armorType].IconSprite;
                 break;
         }
 
@@ -73,7 +87,8 @@ public class StatUiSlot : MonoBehaviour, IPointerClickHandler
                 pc.PlayerWeaponType = WeaponType.None;
                 break;
             case SlotType.Armor:
-                ArmorItemData aid = pc.PlayerArmors[(int)armorType];
+                ArmorItemData aid = pc.PlayerArmors[(int)armorType]; 
+                pc.OnChangeArmor((int)armorType, false);
                 pc.PlayerArmors[(int)armorType] = null;
                 pc.InventoryManager.Add(aid);
                 break;

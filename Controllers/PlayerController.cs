@@ -6,7 +6,6 @@ using System.Linq;
 using System.Resources;
 using System.Threading;
 using Unity.VisualScripting;
-using UnityEditor.Timeline.Actions;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -18,8 +17,11 @@ public class PlayerController : CreatureController
     Vector3 playerMoveDir = Vector3.zero;
     Vector3 playerVelocity = Vector3.zero;
 
+    public int AdditionalDmg { get; private set; } = 0;
+    public int AdditionalDef { get; set; } = 0;
+
     float playerMoveSpeed = 7.0f;
-    float dashSpeed = 0f;
+    float dashSpeedAdditional = 0f;
     float gravity = -20f;
     float jumpHeight = 1f;
     float swordAttackRange = 1f;
@@ -154,6 +156,9 @@ public class PlayerController : CreatureController
         statUiHolder.gameObject.SetActive(false);
         inventoryHolder.gameObject.SetActive(false);
 
+        if (gameObject.GetComponentInChildren<UI_HPBar>() == null)
+            Managers.UI.MakeWorldSpaceUI<UI_HPBar>(transform.Find("UI_Holder"));
+
         animator.SetFloat("AttackSpeed", attackSpeed);
         animator.SetFloat("JumpAnimSpeed", jumpAnimSpeed);
     }
@@ -162,7 +167,10 @@ public class PlayerController : CreatureController
     {
         Managers.Game.SetPlayer(gameObject);
 
-        if(Managers.Scene.CurrentScene is GameScene)
+        Stat = gameObject.GetComponent<PlayerStat>();
+        playerMoveSpeed = Stat.MoveSpeed;
+
+        if (Managers.Scene.CurrentScene is GameScene)
         {
             itemDataDict = Managers.Scene.CurrentScene.GetComponent<GameScene>().ItemDataDict;
             AddInvenItems();
@@ -233,8 +241,8 @@ public class PlayerController : CreatureController
 
     protected void UpdateDashing()
     {
-        controller.Move(transform.forward * dashSpeed * Time.deltaTime);
-        dashSpeed = Mathf.Max(dashSpeed - 0.02f * dashSpeed, playerMoveSpeed);
+        controller.Move(transform.forward * dashSpeedAdditional * Time.deltaTime);
+        dashSpeedAdditional = Mathf.Max(dashSpeedAdditional - 0.02f * dashSpeedAdditional, playerMoveSpeed);
     }
 
     protected void UpdateJumping()
@@ -365,16 +373,6 @@ public class PlayerController : CreatureController
             else
                 statUiHolder.gameObject.SetActive(true);
         }
-
-        //if (Input.GetKeyDown(KeyCode.Alpha1))
-        //{
-        //    ChangeWeapon(WeaponType.Sword);
-        //}
-
-        //if (Input.GetKeyDown(KeyCode.Alpha2))
-        //{
-        //    ChangeWeapon(WeaponType.CrossBow);
-        //}
     }
 
     void Jump()
@@ -400,14 +398,23 @@ public class PlayerController : CreatureController
         switch (targetWeapon)
         {
             case WeaponType.None:
+                AdditionalDmg = 0;
                 break;
             case WeaponType.Sword:
+                AdditionalDmg = PlayerWeapons[(int)WeaponType.Sword].Damage;
                 playerWeapon = Managers.Resource.Instantiate(playerSwordPath, rightHandWeaponParent);
                 break;
             case WeaponType.CrossBow:
+                AdditionalDmg = PlayerWeapons[(int)WeaponType.CrossBow].Damage;
                 playerWeapon = Managers.Resource.Instantiate(playerCrossBowPath, rightHandWeaponParent);
                 break;
         }
+    }
+
+    public void OnChangeArmor(int armorType, bool equip)
+    {
+        int sgn = equip ? 1 : -1;
+        AdditionalDef += sgn * PlayerArmors[armorType].Defence;
     }
 
     Transform FindTargetToAttack()
@@ -474,8 +481,8 @@ public class PlayerController : CreatureController
         if (Physics.Raycast(transform.position + Vector3.up, transform.forward, swordAttackRange, mask))
             return;
 
-        CreatureController cc = targetToAttack.GetComponent<CreatureController>();
-        cc.OnDamaged(gameObject, 0);
+        Stat creatureStat = targetToAttack.GetComponent<CreatureController>().Stat;
+        creatureStat.OnAttacked(Stat, AdditionalDmg);
     }
 
     IEnumerator CoTryChangeWeapon(WeaponType type)
@@ -571,7 +578,7 @@ public class PlayerController : CreatureController
         if (coDashCooldown != null)
             yield break;
 
-        dashSpeed = 30f;
+        dashSpeedAdditional = 30f;
         State = CreatureState.Dashing;
         yield return new WaitForSeconds(0.5f);
         if(State == CreatureState.Dashing)

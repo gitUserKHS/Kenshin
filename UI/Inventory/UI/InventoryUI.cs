@@ -157,7 +157,9 @@ namespace Rito.InventorySystem
             if (_itemTooltip == null)
             {
                 _itemTooltip = GetComponentInChildren<ItemTooltipUI>();
+#if UNITY_EDITOR
                 EditorLog("인스펙터에서 아이템 툴팁 UI를 직접 지정하지 않아 자식에서 발견하여 초기화하였습니다.");
+#endif
             }
         }
 
@@ -334,7 +336,9 @@ namespace Rito.InventorySystem
                 // 아이템을 갖고 있는 슬롯만 해당
                 if (_beginDragSlot != null && _beginDragSlot.HasItem && _beginDragSlot.IsAccessible)
                 {
+#if UNITY_EDITOR
                     EditorLog($"Drag Begin : Slot [{_beginDragSlot.Index}]");
+#endif
 
                     // 위치 기억, 참조 등록
                     _beginDragIconTransform = _beginDragSlot.IconRect.transform;
@@ -465,7 +469,9 @@ namespace Rito.InventorySystem
             // 슬롯이 아닌 다른 UI 위에 놓은 경우
             else
             {
+#if UNITY_EDITOR
                 EditorLog($"Drag End(Do Nothing)");
+#endif
             }
         }
 
@@ -642,14 +648,19 @@ namespace Rito.InventorySystem
 #if UNITY_EDITOR
         [Header("Editor Options")]
         [SerializeField] private bool _showDebug = true;
-#endif
+
         [System.Diagnostics.Conditional("UNITY_EDITOR")]
         private void EditorLog(object message)
         {
             if (!_showDebug) return;
             UnityEngine.Debug.Log($"[InventoryUI] {message}");
         }
+#else
+        private void EditorLog(object message)
+        {
 
+        }
+#endif
         #endregion
         /***********************************************************************
         *                               Editor Preview

@@ -30,6 +30,7 @@ namespace Rito.InventorySystem
             //if (pc.PlayerArmors[idx] != null)
             //    return false;
             pc.PlayerArmors[idx] = armorItemData;
+            pc.OnChangeArmor(idx, true);
             IsUsed = true;
             return true;
         }
