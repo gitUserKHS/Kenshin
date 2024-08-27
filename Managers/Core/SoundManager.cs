@@ -90,7 +90,7 @@ public class SoundManager
         }
         else
         {
-            if (audioClips.TryGetValue(path, out audioClip))
+            if (audioClips.TryGetValue(path, out audioClip) == false)
             {
                 audioClip = Managers.Resource.Load<AudioClip>(path);
                 audioClips.Add(path, audioClip);

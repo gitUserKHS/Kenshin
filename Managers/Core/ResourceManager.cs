@@ -34,6 +34,7 @@ public class ResourceManager
             return Managers.Pool.Pop(original, parent, count).gameObject;
 
         GameObject go = Object.Instantiate(original, parent);
+        
         go.name = original.name;
 
         return go;

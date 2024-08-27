@@ -41,11 +41,22 @@ public class Stat : MonoBehaviour
         moveSpeed = 5.0f;
     }
 
+    public void RestoreHP(int hp)
+    {
+        if (Hp + hp > MaxHp)
+            Hp = MaxHp;
+        else
+            Hp += hp;
+    }
+
     public virtual void OnAttacked(Stat attacker, int extraAtk = 0)
     {
+        if (Hp <= 0)
+            return;
+
         int damage = Mathf.Max(0, attacker.Attack - Defense);
         Hp -= damage;
-        if(Hp < 0)
+        if(Hp <= 0)
         {
             Hp = 0;
             OnDead(attacker);

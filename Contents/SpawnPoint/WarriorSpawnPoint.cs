@@ -9,6 +9,7 @@ public class WarriorSpawnPoint : BaseSpawnPoint
     GameObject warrior;
 
     public bool IsDead { get; set; } = false;
+    public float Radius { get; private set; } = 10.0f;
 
     Coroutine coSpawn = null;
 

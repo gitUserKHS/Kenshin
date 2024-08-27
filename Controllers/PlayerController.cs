@@ -24,7 +24,7 @@ public class PlayerController : CreatureController
     float dashSpeedAdditional = 0f;
     float gravity = -20f;
     float jumpHeight = 1f;
-    float swordAttackRange = 1f;
+    float swordAttackRange = 2.5f;
     float bowAttackRange = 5f;
 
     float attackSpeed = 1.5f;
@@ -59,7 +59,7 @@ public class PlayerController : CreatureController
 
     [SerializeField]
     Transform playerSpine;
-    public Transform PlayerSpine { get {return playerSpine; }}
+    public Transform PlayerSpine { get { return playerSpine; }}
 
     Transform statUiHolder;
     Transform inventoryHolder;
@@ -123,6 +123,7 @@ public class PlayerController : CreatureController
                     animator.CrossFade("BOW_ATTACK", 0.05f);
                 break;
             case CreatureState.Die:
+                animator.CrossFade("DIE", 0.1f);
                 break;
             case CreatureState.Jumping:
                 if (isMoving == false)
@@ -156,8 +157,10 @@ public class PlayerController : CreatureController
         statUiHolder.gameObject.SetActive(false);
         inventoryHolder.gameObject.SetActive(false);
 
-        if (gameObject.GetComponentInChildren<UI_HPBar>() == null)
-            Managers.UI.MakeWorldSpaceUI<UI_HPBar>(transform.Find("UI_Holder"));
+        //if (gameObject.GetComponentInChildren<UI_HPBar>() == null)
+        //    Managers.UI.MakeWorldSpaceUI<UI_HPBar>(transform.Find("UI_Holder"));
+        if (FindAnyObjectByType<UI_HPBar_Scene>() == null)
+            Managers.UI.ShowSceneUI<UI_HPBar_Scene>();
 
         animator.SetFloat("AttackSpeed", attackSpeed);
         animator.SetFloat("JumpAnimSpeed", jumpAnimSpeed);
@@ -259,8 +262,16 @@ public class PlayerController : CreatureController
         UpdateMoving();
     }
 
+    protected override void UpdateDie()
+    {
+        
+    }
+
     public void HandleCharacterInput()
     {
+        if(State == CreatureState.Die)
+            return;
+
         ProcessMove();
         ProcessMouseInput();
         ProcessKeyInput();
@@ -319,6 +330,7 @@ public class PlayerController : CreatureController
     {
         float moveX = Input.GetAxisRaw("Horizontal");
         float moveZ = Input.GetAxisRaw("Vertical");
+
         Vector3 dir = Camera.main.transform.rotation * new Vector3(moveX, 0, moveZ);
         dir.y = 0;
         return dir;
@@ -329,8 +341,10 @@ public class PlayerController : CreatureController
         if (coSkill != null)
             return;
 
-        playerMoveDir = GetXZinputDir().normalized;
-        if (playerMoveDir != Vector3.zero)
+        Vector3 moveDir = GetXZinputDir();
+        playerMoveDir = moveDir.normalized;
+
+        if ((moveDir - Vector3.zero).magnitude > 0.01f)
         {
             if (State == CreatureState.Idle || State == CreatureState.Landing)
                 State = CreatureState.Moving;
@@ -385,6 +399,13 @@ public class PlayerController : CreatureController
             playerVelocity.y = Mathf.Sqrt(jumpHeight * -3.0f * gravity);
             if(coJump != null)
                 StopCoroutine(coJump);
+
+            if (coSkill != null)
+            {
+                StopCoroutine(coSkill);
+                coSkill = null;
+            }
+
             coJump = StartCoroutine(CoJump());
         }
     }
@@ -440,6 +461,7 @@ public class PlayerController : CreatureController
             if (delta.y > swordAttackRange * Mathf.Sin(Mathf.Deg2Rad * 45) && PlayerWeaponType == WeaponType.Sword)
                 continue;
 
+            // 앞에 장애물이 가로막고 있는지 확인
             if(Physics.Raycast(transform.position + Vector3.up, delta, delta.magnitude, mask) == false)
             {
                 return monster.transform;
@@ -473,11 +495,13 @@ public class PlayerController : CreatureController
 
         LayerMask mask = 1 << (int)Layer.Block;
         Vector3 delta = targetToAttack.transform.position - transform.position;
-        if (delta.magnitude > swordAttackRange + 0.5f)  // 길이를 0.5만큼 보정
+        if (delta.magnitude > swordAttackRange)
         {
             Debug.Log("attackRange is too short");
             return;
         }
+
+        // 앞에 장애물이 가로막고 있는지 확인
         if (Physics.Raycast(transform.position + Vector3.up, transform.forward, swordAttackRange, mask))
             return;
 

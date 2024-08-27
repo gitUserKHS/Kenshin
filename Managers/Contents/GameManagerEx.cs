@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class GameManagerEx
@@ -27,7 +28,7 @@ public class GameManagerEx
         {
             case Define.WorldObject.Monster:
                 {
-                    MonsterController mc = go.GetComponent<MonsterController>();
+                    WarriorController mc = go.GetComponent<WarriorController>();
                     mc.State = Define.CreatureState.Die;
                 }
                 break;
@@ -35,7 +36,7 @@ public class GameManagerEx
                 {
                     PlayerController pc = go.GetComponent<PlayerController>();
                     pc.State = Define.CreatureState.Die;
-                    player.SetActive(false);
+                    Managers.UI.ShowPopupUI<Die_UI>();
                 }
                 break;
         }

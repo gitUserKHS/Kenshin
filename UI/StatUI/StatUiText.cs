@@ -8,6 +8,7 @@ public class StatUiText : MonoBehaviour
     [SerializeField] TMP_Text dmgText;
     [SerializeField] TMP_Text defText;
     [SerializeField] TMP_Text hpText;
+    [SerializeField] TMP_Text lvlText;
 
     PlayerController playerController;
 
@@ -21,5 +22,6 @@ public class StatUiText : MonoBehaviour
         dmgText.text = $"Damage: {playerController.Stat.Attack + playerController.AdditionalDmg}";
         defText.text = $"Defense: {playerController.Stat.Defense + playerController.AdditionalDef}";
         hpText.text = $"Hp: {playerController.Stat.Hp}";
+        lvlText.text = $"level: {playerController.Stat.Level}";
     }
 }

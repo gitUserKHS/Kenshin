@@ -36,6 +36,7 @@ public class CreatureController : BaseController
                 animator.CrossFade("ATTACK", 0.1f);
                 break;
             case CreatureState.Die:
+                animator.CrossFade("DIE", 0.1f);
                 break;
         }
     }

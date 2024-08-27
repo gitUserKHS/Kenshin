@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
 
 // 날짜 : 2021-03-28 PM 11:07:23
@@ -15,9 +16,16 @@ namespace Rito.InventorySystem
 
         public bool Use()
         {
-            // 임시 : 개수 하나 감소
-            Amount--;
+            GameObject player = Managers.Game.GetPlayer();
+            PlayerController pc = player.GetComponent<PlayerController>();
+            PortionItemData data = Data as PortionItemData;
 
+            if (pc.Stat.Hp >= pc.Stat.MaxHp)
+                return false;
+
+            pc.Stat.RestoreHP(data.Value);
+
+            Amount--;
             return true;
         }
 

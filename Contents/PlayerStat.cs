@@ -36,7 +36,7 @@ public class PlayerStat : Stat
             {
                 Debug.Log("Level Up!");
                 Level = level;
-                //SetStat(Level);
+                SetStat(Level);
             }
         }
     }
@@ -73,5 +73,6 @@ public class PlayerStat : Stat
     protected override void OnDead(Stat attacker)
     {
         Debug.Log("Player Dead");
+        Managers.Game.Despawn(gameObject);
     }
 }
