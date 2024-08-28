@@ -25,6 +25,7 @@ namespace Rito.InventorySystem
             if (pc.PlayerArmors[idx] != null)
             {
                 pc.InventoryManager.Add(pc.PlayerArmors[idx]);
+                pc.OnChangeArmor(idx, false);
                 pc.PlayerArmors[idx] = null;
             }
             //if (pc.PlayerArmors[idx] != null)
