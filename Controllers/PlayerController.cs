@@ -453,7 +453,12 @@ public class PlayerController : CreatureController
         {
             Vector3 delta = monster.transform.position - transform.position;
 
+            // 검으로 공격 가능한 높이에 있는가
             if (delta.y > swordAttackRange * Mathf.Sin(Mathf.Deg2Rad * 45) && PlayerWeaponType == WeaponType.Sword)
+                continue;
+
+            // 몬스터가 죽었는지 확인
+            if (monster.GetComponent<CreatureController>().State == CreatureState.Die)
                 continue;
 
             // 앞에 장애물이 가로막고 있는지 확인
