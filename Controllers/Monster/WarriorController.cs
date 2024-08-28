@@ -122,7 +122,7 @@ public class WarriorController : CreatureController
         Vector3 delta = lockTarget.transform.position - transform.position;
         if (delta.magnitude > attackRange)
         {
-            Debug.Log("attackRange is too short");
+            Debug.Log("warrior attackRange is too short");
             return;
         }
 
@@ -162,14 +162,18 @@ public class WarriorController : CreatureController
 
     IEnumerator CoAttack()
     {
-        transform.rotation = Quaternion.LookRotation(lockTarget.transform.position - transform.position);
+        Vector3 dir = lockTarget.transform.position - transform.position;
+        transform.rotation = Quaternion.LookRotation(new Vector3(dir.x, 0, dir.z));
+
         animator.Play("ATTACK");
+        Managers.Sound.Play("sword_swing");
         yield return new WaitForSeconds(1 / attackSpeed);
         coAttack = null;
     }
 
     IEnumerator CoDead()
     {
+        Managers.Sound.Play("oof");
         yield return new WaitForSeconds(1.333f / dieAnimSpeed);
         Managers.Resource.Destroy(gameObject);
         warriorSpawnPoint.IsDead = true;

@@ -1,15 +1,9 @@
 using Rito.InventorySystem;
-using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
-using System.Resources;
-using System.Threading;
-using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
-using UnityEngine.UIElements;
 using static Define;
 
 public class PlayerController : CreatureController
@@ -21,7 +15,7 @@ public class PlayerController : CreatureController
     public int AdditionalDef { get; set; } = 0;
 
     float playerMoveSpeed = 7.0f;
-    float dashSpeedAdditional = 0f;
+    float dashSpeed = 0f;
     float gravity = -20f;
     float jumpHeight = 1f;
     float swordAttackRange = 2.5f;
@@ -36,6 +30,7 @@ public class PlayerController : CreatureController
 
     bool playerSlerping = false;
     bool isMoving = false;
+    bool walkingSfxToggle = true;
 
     CharacterController controller;
     CameraController cameraController;
@@ -76,6 +71,7 @@ public class PlayerController : CreatureController
     Coroutine coLand = null;
     Coroutine coDash = null;
     Coroutine coDashCooldown = null;
+    Coroutine coPlayWalkingSfx = null;
 
     public override CreatureState State
     {
@@ -100,6 +96,9 @@ public class PlayerController : CreatureController
                 isMoving = true;
             else
                 isMoving = false;
+
+            if (value == CreatureState.Die)
+                Managers.Sound.Play("Player/game_over");
 
             state = value;
             UpdateAnimation();
@@ -157,8 +156,6 @@ public class PlayerController : CreatureController
         statUiHolder.gameObject.SetActive(false);
         inventoryHolder.gameObject.SetActive(false);
 
-        //if (gameObject.GetComponentInChildren<UI_HPBar>() == null)
-        //    Managers.UI.MakeWorldSpaceUI<UI_HPBar>(transform.Find("UI_Holder"));
         if (FindAnyObjectByType<UI_HPBar_Scene>() == null)
             Managers.UI.ShowSceneUI<UI_HPBar_Scene>();
 
@@ -240,12 +237,15 @@ public class PlayerController : CreatureController
     {
         float moveSpeed = playerMoveSpeed;
         controller.Move(playerMoveDir * moveSpeed * Time.deltaTime);
+
+        if(coPlayWalkingSfx == null && State == CreatureState.Moving)
+            coPlayWalkingSfx = StartCoroutine(CoPlayWalkingSfx(0.4f));
     }
 
     protected void UpdateDashing()
     {
-        controller.Move(transform.forward * dashSpeedAdditional * Time.deltaTime);
-        dashSpeedAdditional = Mathf.Max(dashSpeedAdditional - 0.02f * dashSpeedAdditional, playerMoveSpeed);
+        controller.Move(transform.forward * dashSpeed * Time.deltaTime);
+        dashSpeed = Mathf.Max(dashSpeed - 0.02f * dashSpeed, playerMoveSpeed);
     }
 
     protected void UpdateJumping()
@@ -260,11 +260,6 @@ public class PlayerController : CreatureController
             coLand = StartCoroutine(CoLand());
         }
         UpdateMoving();
-    }
-
-    protected override void UpdateDie()
-    {
-        
     }
 
     public void HandleCharacterInput()
@@ -528,9 +523,16 @@ public class PlayerController : CreatureController
             targetVec.y = 0;
             transform.rotation = Quaternion.LookRotation(targetVec);
         }
+
         State = CreatureState.Skill;
+        Managers.Sound.Play($"Player/attack{Random.Range(1, 3)}");
+        Managers.Sound.Play("sword_swing");
+
         yield return new WaitForSeconds(1 / attackSpeed);
-        State = CreatureState.Idle;
+        
+        if(State == CreatureState.Skill)
+            State = CreatureState.Idle;
+
         coSkill = null;
     }
 
@@ -558,8 +560,13 @@ public class PlayerController : CreatureController
         ac.Owner = gameObject;
         ac.Init();
 
+        Managers.Sound.Play("bow_shoot");
+
         yield return new WaitForSeconds(0.2f);
-        State = CreatureState.Idle;
+
+        if (State == CreatureState.Skill)
+            State = CreatureState.Idle;
+
         coSkill = null;
     }
 
@@ -568,12 +575,11 @@ public class PlayerController : CreatureController
         State = CreatureState.Jumping;
         yield return new WaitForSeconds(1 / jumpAnimSpeed);
 
-        if (IsGrounded())
+        if (IsGrounded() && State == CreatureState.Jumping)
         {
-            //isJumping = false;
             State = CreatureState.Idle;
         }
-        else 
+        else if(State  == CreatureState.Jumping)
         {
             State = CreatureState.Falling;
         }
@@ -602,8 +608,10 @@ public class PlayerController : CreatureController
         if (coDashCooldown != null)
             yield break;
 
-        dashSpeedAdditional = 30f;
+        dashSpeed = 30f;
         State = CreatureState.Dashing;
+        Managers.Sound.Play("dash");
+
         yield return new WaitForSeconds(0.5f);
         if(State == CreatureState.Dashing)
             State = CreatureState.Idle;
@@ -615,5 +623,17 @@ public class PlayerController : CreatureController
     {
         yield return new WaitForSeconds(0.2f);
         coDashCooldown = null;
+    }
+
+    IEnumerator CoPlayWalkingSfx(float duration)
+    {
+        if (walkingSfxToggle)
+            Managers.Sound.Play("walking1");
+        else
+            Managers.Sound.Play("walking2");
+
+        yield return new WaitForSeconds(duration);
+        walkingSfxToggle = !walkingSfxToggle;
+        coPlayWalkingSfx = null;
     }
 }

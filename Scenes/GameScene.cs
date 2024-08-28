@@ -21,6 +21,8 @@ public class GameScene : BaseScene
         {
             ItemDataDict.Add(itemData.ID, itemData);
         }
+
+        Managers.Sound.Play("Bgm/game", Define.Sound.Bgm);
     }
 
     public override void Clear()

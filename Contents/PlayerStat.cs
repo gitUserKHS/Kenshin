@@ -70,6 +70,15 @@ public class PlayerStat : Stat
         attack = stat.attack;
     }
 
+    public override void OnAttacked(Stat attacker, int extraAtk = 0)
+    {
+        if (Hp <= 0)
+            return;
+
+        Managers.Sound.Play("hit");
+        base.OnAttacked(attacker, extraAtk);
+    }
+
     protected override void OnDead(Stat attacker)
     {
         Debug.Log("Player Dead");
